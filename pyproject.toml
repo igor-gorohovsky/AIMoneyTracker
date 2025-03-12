@@ -1,0 +1,49 @@
+[tool.poetry]
+name = "expenses-tracker"
+version = "0.1.0"
+description = ""
+authors = ["None"]
+readme = "README.md"
+packages = [
+    { include = "*", from = "src" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+python-telegram-bot = "^21.10"
+loguru = "^0.7.3"
+pydantic = "^2.10.6"
+sqlalchemy = "^2.0.38"
+asyncpg = "^0.30.0"
+
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.9.9"
+pytest = "^8.3.5"
+docker = "^7.1.0"
+pytest-env = "^1.1.5"
+pytest-asyncio = "^0.25.3"
+assertpy = "^1.1"
+
+
+[tool.poetry.group.pre-commit.dependencies]
+pytest-asyncio = "^0.25.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 79
+indent-width = 4
+
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["PLR0913", "S101", "ANN201", "D103", "DTZ001", "PT006", "FA102", "BLE001", "ANN204", "D107", "D101", "D102", "TD", "FIX001", "TRY003", "S311"]
+fixable = ["ALL"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+

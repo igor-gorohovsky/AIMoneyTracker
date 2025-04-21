@@ -1,42 +1,28 @@
-import random
-from datetime import UTC, datetime
 from typing import Callable
-from unittest.mock import Mock
 
 import pytest
 from assertpy import assert_that
-from telegram import Chat, Message, Update, User
+from sqlalchemy.ext.asyncio import AsyncEngine
 
-from bot import Bot
+from db.manager import DBManager
 from db.models import Category
 from misc import CategoryType
+from service import Service
 
 
-@pytest.mark.asyncio
-async def test(
-    bot: Bot,
-    create_currency: Callable,
-    get_user: Callable,
-    get_accounts: Callable,
-    get_user_categories: Callable,
-    context_mock: Mock,
-) -> None:
-    currency = await create_currency("United States dollar", "USD", "$")
-    update_obj = Update(
-        update_id=1,
-        message=Message(
-            message_id=1,
-            date=datetime.now(tz=UTC),
-            chat=Chat(id=1, type="chat"),
-            from_user=User(
-                id=random.randint(0, 10),
-                first_name="Alex",
-                last_name="O",
-                is_bot=False,
-            ),
-        ),
-    )
-    expected_categories = [
+@pytest.fixture
+def db_manager(engine: AsyncEngine) -> DBManager:
+    return DBManager(engine)
+
+
+@pytest.fixture
+def sut(db_manager: DBManager) -> Service:
+    return Service(db_manager)
+
+
+@pytest.fixture
+def expected_categories():
+    return [
         Category(
             category_id=1,
             user_id=1,
@@ -93,9 +79,22 @@ async def test(
         ),
     ]
 
-    _ = await bot.start(update_obj, context_mock)
 
-    expected_user = await get_user(update_obj.effective_user.id)
+@pytest.mark.asyncio
+async def test_register_user(
+    sut: Service,
+    create_currency: Callable,
+    get_user: Callable,
+    get_accounts: Callable,
+    get_user_categories: Callable,
+    expected_categories: list[Category],
+) -> None:
+    currency = await create_currency("United States dollar", "USD", "$")
+    user_tg_id = 1
+
+    _ = await sut.register_user(user_tg_id)
+
+    expected_user = await get_user(user_tg_id)
     accounts = await get_accounts(expected_user.user_id)
     categories = await get_user_categories(expected_user.user_id)
 
@@ -112,5 +111,11 @@ async def test(
     assert_that(categories).is_equal_to(expected_categories)
 
 
-def test_user_duplicate_is_not_created():
-    pass
+@pytest.mark.asyncio
+async def test_create_account(
+    sut: Service,
+):
+    user_tg_id = 1
+    account_currency = "USD"
+
+    _ = await sut.create_account(user_tg_id, account_currency)

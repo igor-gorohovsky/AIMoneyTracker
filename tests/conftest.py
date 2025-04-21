@@ -6,14 +6,15 @@ from typing import Callable
 from unittest.mock import create_autospec
 
 import docker
+import httpx
 import pytest
 from docker.models.containers import Container
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from telegram import Bot as TGBot
 from telegram.ext import ContextTypes
 
-from bot import Bot
-from db.models import Account, Category, Currency, UserAccount
+from db.manager import DBManager
+from db.models import Account, Category, Currency, Rate, UserAccount
 from db.queries import AsyncQuerier
 
 BASE_DIR = Path(__file__).parent.parent
@@ -82,6 +83,11 @@ def db():
 
 
 @pytest.fixture
+def db_manager(engine: AsyncEngine) -> DBManager:
+    return DBManager(engine)
+
+
+@pytest.fixture
 def engine() -> AsyncEngine:
     db_url = os.getenv(
         "DATABASE_URL",
@@ -91,8 +97,15 @@ def engine() -> AsyncEngine:
 
 
 @pytest.fixture
-def bot(engine: AsyncEngine):
-    return Bot(engine=engine)
+def httpx_client() -> Callable:
+    def inner(response: httpx.Response) -> httpx.AsyncClient:
+        return httpx.AsyncClient(
+            transport=httpx.MockTransport(
+                lambda request: response,  # noqa: ARG005
+            ),
+        )
+
+    return inner
 
 
 @pytest.fixture
@@ -146,5 +159,30 @@ def get_user_categories(engine: AsyncEngine) -> Callable:
             return [
                 c async for c in querier.get_user_categories(user_id=user_id)
             ]
+
+    return wrapper
+
+
+@pytest.fixture
+def get_rate(engine: AsyncEngine) -> Callable:
+    async def wrapper(from_currency_id: int, to_currency_id: int) -> Rate:
+        async with engine.connect() as conn:
+            querier = AsyncQuerier(conn)
+            rate = await querier.get_rate(
+                from_currency=from_currency_id,
+                to_currency=to_currency_id,
+            )
+            assert rate is not None
+            return rate
+
+    return wrapper
+
+
+@pytest.fixture
+def get_currency(engine: AsyncEngine) -> Callable:
+    async def wrapper(iso_code: str) -> Currency | None:
+        async with engine.connect() as conn:
+            querier = AsyncQuerier(conn)
+            return await querier.get_currency(iso_code=iso_code)
 
     return wrapper

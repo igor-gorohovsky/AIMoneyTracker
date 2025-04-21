@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from db.models import Account, Category, Currency, UserAccount
+from db.models import Account, Category, Currency, Rate, UserAccount
 from db.queries import AsyncQuerier
 from misc import DEFAULT_CATEGORIES, CategoryType
 
@@ -85,9 +85,24 @@ class DBManager:
         assert account is not None
         return account
 
-    async def get_currency(self, iso_code: str) -> Currency:
-        currency = await self._querier.get_currency(iso_code=iso_code)
-        assert currency is not None
+    async def get_currency(self, iso_code: str) -> Currency | None:
+        return await self._querier.get_currency(iso_code=iso_code)
+
+    async def get_or_create_currency(
+        self,
+        iso_code: str,
+        name: str,
+        symbol: str,
+    ) -> Currency:
+        currency = await self.get_currency(iso_code)
+
+        if not currency:
+            currency = await self.create_currency(
+                name,
+                iso_code,
+                symbol,
+            )
+
         return currency
 
     async def create_default_categories(self, user_id: int) -> list[Category]:
@@ -105,7 +120,12 @@ class DBManager:
         user_id: int,
         currency_id: int,
     ) -> Account:
-        return await self.create_account(user_id, "Default", 0, currency_id)
+        return await self.create_account(
+            user_id,
+            "Default",
+            Decimal(0),
+            currency_id,
+        )
 
     async def _get_querier(self) -> AsyncQuerier:
         if self._querier is not None:
@@ -113,3 +133,29 @@ class DBManager:
 
         conn = await self._engine.connect()
         return AsyncQuerier(conn)
+
+    async def update_currency_rate(
+        self,
+        from_currency_id: int,
+        to_currency_id: int,
+        rate_value: Decimal,
+    ) -> Rate:
+        existing_rate = await self._querier.get_rate(
+            from_currency=from_currency_id,
+            to_currency=to_currency_id,
+        )
+        if existing_rate:
+            rate = await self._querier.update_rate(
+                from_currency=from_currency_id,
+                to_currency=to_currency_id,
+                rate=rate_value,
+            )
+        else:
+            rate = await self._querier.create_rate(
+                from_currency=from_currency_id,
+                to_currency=to_currency_id,
+                rate=rate_value,
+            )
+
+        assert rate is not None
+        return rate

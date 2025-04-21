@@ -45,3 +45,21 @@ RETURNING *;
 -- name: GetUserCategories :many
 SELECT * FROM category
 WHERE user_id = $1;
+
+-- name: CreateRate :one
+INSERT INTO rate(
+    from_currency, to_currency, rate
+) VALUES (
+    $1, $2, $3
+)
+RETURNING *;
+
+-- name: GetRate :one
+SELECT * FROM rate
+WHERE from_currency = $1 AND to_currency = $2;
+
+-- name: UpdateRate :one
+UPDATE rate
+SET rate = $3
+WHERE from_currency = $1 AND to_currency = $2
+RETURNING *;

@@ -41,6 +41,16 @@ RETURNING currency_id, name, iso_code, symbol
 """
 
 
+CREATE_RATE = """-- name: create_rate \\:one
+INSERT INTO rate(
+    from_currency, to_currency, rate
+) VALUES (
+    :p1, :p2, :p3
+)
+RETURNING rate_id, from_currency, to_currency, rate, updated_at
+"""
+
+
 CREATE_USER = """-- name: create_user \\:one
 INSERT INTO user_account(
     user_tg_id, currency_id
@@ -63,6 +73,12 @@ WHERE iso_code = :p1
 """
 
 
+GET_RATE = """-- name: get_rate \\:one
+SELECT rate_id, from_currency, to_currency, rate, updated_at FROM rate
+WHERE from_currency = :p1 AND to_currency = :p2
+"""
+
+
 GET_USER = """-- name: get_user \\:one
 SELECT user_id, user_tg_id, balance, currency_id FROM user_account
 WHERE user_tg_id = :p1
@@ -72,6 +88,14 @@ WHERE user_tg_id = :p1
 GET_USER_CATEGORIES = """-- name: get_user_categories \\:many
 SELECT category_id, user_id, name, type FROM category
 WHERE user_id = :p1
+"""
+
+
+UPDATE_RATE = """-- name: update_rate \\:one
+UPDATE rate
+SET rate = :p3
+WHERE from_currency = :p1 AND to_currency = :p2
+RETURNING rate_id, from_currency, to_currency, rate, updated_at
 """
 
 
@@ -118,6 +142,18 @@ class Querier:
             symbol=row[3],
         )
 
+    def create_rate(self, *, from_currency: int, to_currency: int, rate: decimal.Decimal) -> Optional[models.Rate]:
+        row = self._conn.execute(sqlalchemy.text(CREATE_RATE), {"p1": from_currency, "p2": to_currency, "p3": rate}).first()
+        if row is None:
+            return None
+        return models.Rate(
+            rate_id=row[0],
+            from_currency=row[1],
+            to_currency=row[2],
+            rate=row[3],
+            updated_at=row[4],
+        )
+
     def create_user(self, *, user_tg_id: int, currency_id: int) -> Optional[models.UserAccount]:
         row = self._conn.execute(sqlalchemy.text(CREATE_USER), {"p1": user_tg_id, "p2": currency_id}).first()
         if row is None:
@@ -151,6 +187,18 @@ class Querier:
             symbol=row[3],
         )
 
+    def get_rate(self, *, from_currency: int, to_currency: int) -> Optional[models.Rate]:
+        row = self._conn.execute(sqlalchemy.text(GET_RATE), {"p1": from_currency, "p2": to_currency}).first()
+        if row is None:
+            return None
+        return models.Rate(
+            rate_id=row[0],
+            from_currency=row[1],
+            to_currency=row[2],
+            rate=row[3],
+            updated_at=row[4],
+        )
+
     def get_user(self, *, user_tg_id: int) -> Optional[models.UserAccount]:
         row = self._conn.execute(sqlalchemy.text(GET_USER), {"p1": user_tg_id}).first()
         if row is None:
@@ -171,6 +219,18 @@ class Querier:
                 name=row[2],
                 type=row[3],
             )
+
+    def update_rate(self, *, from_currency: int, to_currency: int, rate: decimal.Decimal) -> Optional[models.Rate]:
+        row = self._conn.execute(sqlalchemy.text(UPDATE_RATE), {"p1": from_currency, "p2": to_currency, "p3": rate}).first()
+        if row is None:
+            return None
+        return models.Rate(
+            rate_id=row[0],
+            from_currency=row[1],
+            to_currency=row[2],
+            rate=row[3],
+            updated_at=row[4],
+        )
 
 
 class AsyncQuerier:
@@ -216,6 +276,18 @@ class AsyncQuerier:
             symbol=row[3],
         )
 
+    async def create_rate(self, *, from_currency: int, to_currency: int, rate: decimal.Decimal) -> Optional[models.Rate]:
+        row = (await self._conn.execute(sqlalchemy.text(CREATE_RATE), {"p1": from_currency, "p2": to_currency, "p3": rate})).first()
+        if row is None:
+            return None
+        return models.Rate(
+            rate_id=row[0],
+            from_currency=row[1],
+            to_currency=row[2],
+            rate=row[3],
+            updated_at=row[4],
+        )
+
     async def create_user(self, *, user_tg_id: int, currency_id: int) -> Optional[models.UserAccount]:
         row = (await self._conn.execute(sqlalchemy.text(CREATE_USER), {"p1": user_tg_id, "p2": currency_id})).first()
         if row is None:
@@ -249,6 +321,18 @@ class AsyncQuerier:
             symbol=row[3],
         )
 
+    async def get_rate(self, *, from_currency: int, to_currency: int) -> Optional[models.Rate]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_RATE), {"p1": from_currency, "p2": to_currency})).first()
+        if row is None:
+            return None
+        return models.Rate(
+            rate_id=row[0],
+            from_currency=row[1],
+            to_currency=row[2],
+            rate=row[3],
+            updated_at=row[4],
+        )
+
     async def get_user(self, *, user_tg_id: int) -> Optional[models.UserAccount]:
         row = (await self._conn.execute(sqlalchemy.text(GET_USER), {"p1": user_tg_id})).first()
         if row is None:
@@ -269,3 +353,15 @@ class AsyncQuerier:
                 name=row[2],
                 type=row[3],
             )
+
+    async def update_rate(self, *, from_currency: int, to_currency: int, rate: decimal.Decimal) -> Optional[models.Rate]:
+        row = (await self._conn.execute(sqlalchemy.text(UPDATE_RATE), {"p1": from_currency, "p2": to_currency, "p3": rate})).first()
+        if row is None:
+            return None
+        return models.Rate(
+            rate_id=row[0],
+            from_currency=row[1],
+            to_currency=row[2],
+            rate=row[3],
+            updated_at=row[4],
+        )

@@ -1,0 +1,2 @@
+class NotSupportedCurrencyError(ValueError):
+    pass

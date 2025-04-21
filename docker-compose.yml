@@ -13,11 +13,69 @@ services:
           target: /src
         - action: rebuild
           path: ./pyproject.toml
+        - action: rebuild
+          path: ./.env
     environment:
       - TG_TOKEN
       - DATABASE_URL
+      - CURRENCY_API_KEY
+      - REDIS_URL
     depends_on:
       db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+        
+  worker:
+    image: ex_tracker_tg_bot:${TAG:-latest}
+    build:
+      dockerfile: ./Dockerfile
+      context: .
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./src
+          target: /src
+        - action: rebuild
+          path: ./pyproject.toml
+        - action: rebuild
+          path: ./.env
+    command: ["taskiq", "worker", "worker.broker:broker", "-fsd"]
+    environment:
+      - DATABASE_URL
+      - CURRENCY_API_KEY
+      - CURRENCY_URL
+      - REDIS_URL
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+        
+  scheduler:
+    image: ex_tracker_tg_bot:${TAG:-latest}
+    build:
+      dockerfile: ./Dockerfile
+      context: .
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./src
+          target: /src
+        - action: rebuild
+          path: ./pyproject.toml
+        - action: rebuild
+          path: ./.env
+    command: ["taskiq", "scheduler", "worker.broker:scheduler", "-fsd"]
+    environment:
+      - DATABASE_URL
+      - CURRENCY_API_KEY
+      - CURRENCY_URL
+      - REDIS_URL
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   db:
@@ -46,8 +104,21 @@ services:
       - 8080:8978
     volumes:
       - dbeaverdata:/opt/cloudbeaver/workspace
+      
+  redis:
+    image: redis:7-alpine
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redis_data:/data
 
 volumes:
   pgdata:
   dbeaverdata:
+  redis_data:
 

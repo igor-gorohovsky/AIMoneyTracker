@@ -186,3 +186,18 @@ def get_currency(engine: AsyncEngine) -> Callable:
             return await querier.get_currency(iso_code=iso_code)
 
     return wrapper
+
+
+@pytest.fixture
+def create_user(engine: AsyncEngine) -> Callable:
+    async def wrapper(user_tg_id: int, currency_id: int) -> UserAccount:
+        async with engine.begin() as conn:
+            querier = AsyncQuerier(conn)
+            user = await querier.create_user(
+                user_tg_id=user_tg_id,
+                currency_id=currency_id,
+            )
+            assert user is not None
+        return user
+
+    return wrapper

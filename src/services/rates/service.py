@@ -5,11 +5,11 @@ from loguru import logger
 from currencies import CURRENCIES
 from db.manager import DBManager
 from db.models import Currency
-from worker.rates.dtos import Rates
-from worker.rates.requesters import RatesRequester
+from services.rates.dtos import Rates
+from services.rates.requesters import RatesRequester
 
 
-class RatesInteractor:
+class CurrenciesRatesService:
     BASE_CURRENCY = "EUR"
 
     def __init__(

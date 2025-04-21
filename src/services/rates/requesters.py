@@ -5,7 +5,7 @@ import httpx
 
 from db.models import Currency
 from env import CURRENCY_API_KEY, CURRENCY_URL
-from worker.rates.dtos import Rates
+from services.rates.dtos import Rates
 
 
 class RatesRequester(ABC):

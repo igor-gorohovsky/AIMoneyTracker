@@ -8,18 +8,18 @@ from assertpy import assert_that
 
 from currencies import CURRENCIES
 from db.manager import DBManager
-from worker.rates.dtos import Rates
-from worker.rates.interactor import RatesInteractor
-from worker.rates.requesters import ExchangeRatesRequester
+from services.rates.dtos import Rates
+from services.rates.requesters import ExchangeRatesRequester
+from services.rates.service import CurrenciesRatesService
 
 
 @pytest.fixture
 def base_currency(create_currency: Callable) -> Callable:
     async def get_base_currency() -> CoroutineType:
-        currency_info = CURRENCIES[RatesInteractor.BASE_CURRENCY]
+        currency_info = CURRENCIES[CurrenciesRatesService.BASE_CURRENCY]
         return await create_currency(
             currency_info["name"],
-            RatesInteractor.BASE_CURRENCY,
+            CurrenciesRatesService.BASE_CURRENCY,
             currency_info["symbol"],
         )
 
@@ -68,7 +68,7 @@ async def test_fetch_currency_rates(
     client = httpx_client(mock_response)
 
     requester = ExchangeRatesRequester(client)
-    sut = RatesInteractor(db_manager, requester)
+    sut = CurrenciesRatesService(db_manager, requester)
 
     # Act
     rates = await sut.fetch_currency_rates(currency)
@@ -86,7 +86,7 @@ async def test_update_currency_rates(
     get_currency: Callable,
 ) -> None:
     # Arrange
-    mock_data = mock_rates_response(RatesInteractor.BASE_CURRENCY)
+    mock_data = mock_rates_response(CurrenciesRatesService.BASE_CURRENCY)
 
     mock_response = httpx.Response(
         200,
@@ -95,13 +95,13 @@ async def test_update_currency_rates(
     client = httpx_client(mock_response)
 
     requester = ExchangeRatesRequester(client)
-    sut = RatesInteractor(db_manager, requester)
+    sut = CurrenciesRatesService(db_manager, requester)
 
     # Act
     await sut.update_currency_rates()
 
     # Assert
-    base_currency = await get_currency(RatesInteractor.BASE_CURRENCY)
+    base_currency = await get_currency(CurrenciesRatesService.BASE_CURRENCY)
     eur_currency = await get_currency("EUR")
     gbp_currency = await get_currency("GBP")
     jpy_currency = await get_currency("JPY")
@@ -155,7 +155,7 @@ async def test_update_currency_rates_with_unsupported_currency(
     get_currency: Callable,
 ) -> None:
     # Arrange
-    mock_data = mock_rates_response(RatesInteractor.BASE_CURRENCY)
+    mock_data = mock_rates_response(CurrenciesRatesService.BASE_CURRENCY)
     mock_data["rates"]["XYZ"] = 1.23
 
     mock_response = httpx.Response(
@@ -165,14 +165,14 @@ async def test_update_currency_rates_with_unsupported_currency(
     client = httpx_client(mock_response)
 
     requester = ExchangeRatesRequester(client)
-    sut = RatesInteractor(db_manager, requester)
+    sut = CurrenciesRatesService(db_manager, requester)
 
     # Act
     await sut.update_currency_rates()
 
     # Assert
     xyz_currency = await get_currency("XYZ")
-    base_currency = await get_currency(RatesInteractor.BASE_CURRENCY)
+    base_currency = await get_currency(CurrenciesRatesService.BASE_CURRENCY)
     eur_currency = await get_currency("EUR")
     gbp_currency = await get_currency("GBP")
     jpy_currency = await get_currency("JPY")

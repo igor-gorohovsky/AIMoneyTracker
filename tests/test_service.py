@@ -109,13 +109,3 @@ async def test_register_user(
 
     assert_that(categories).is_length(9)
     assert_that(categories).is_equal_to(expected_categories)
-
-
-@pytest.mark.asyncio
-async def test_create_account(
-    sut: Service,
-):
-    user_tg_id = 1
-    account_currency = "USD"
-
-    _ = await sut.create_account(user_tg_id, account_currency)

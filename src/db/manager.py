@@ -87,6 +87,9 @@ class DBManager:
 
     async def get_currency(self, iso_code: str) -> Currency | None:
         return await self._querier.get_currency(iso_code=iso_code)
+        
+    async def get_user(self, user_tg_id: int) -> UserAccount | None:
+        return await self._querier.get_user(user_tg_id=user_tg_id)
 
     async def get_or_create_currency(
         self,

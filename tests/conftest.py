@@ -66,7 +66,7 @@ def apply_migrations():
     )
 
 
-@pytest.fixture(autouse=True, scope="function")
+@pytest.fixture(autouse=True, scope="session")
 def db():
     container = run_db_container()
 
@@ -99,7 +99,7 @@ async def engine() -> AsyncEngine:
     # Teardown: truncate all tables after each test
     async with engine_obj.begin() as conn:
         result = await conn.execute(
-            text("SELECT tablename FROM pg_tables WHERE schemaname='public'")
+            text("SELECT tablename FROM pg_tables WHERE schemaname='public'"),
         )
         tables = [row[0] for row in result]
         if tables:

@@ -65,7 +65,7 @@ def apply_migrations():
     )
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(autouse=True, scope="function")
 def db():
     container = run_db_container()
 

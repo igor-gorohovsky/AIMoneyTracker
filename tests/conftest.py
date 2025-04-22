@@ -9,6 +9,7 @@ import docker
 import httpx
 import pytest
 from docker.models.containers import Container
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from telegram import Bot as TGBot
 from telegram.ext import ContextTypes
@@ -88,12 +89,22 @@ def db_manager(engine: AsyncEngine) -> DBManager:
 
 
 @pytest.fixture
-def engine() -> AsyncEngine:
+async def engine() -> AsyncEngine:
     db_url = os.getenv(
         "DATABASE_URL",
         "",
     )
-    return create_async_engine(db_url)
+    engine_obj = create_async_engine(db_url)
+    yield engine_obj
+    # Teardown: truncate all tables after each test
+    async with engine_obj.begin() as conn:
+        result = await conn.execute(
+            text("SELECT tablename FROM pg_tables WHERE schemaname='public'")
+        )
+        tables = [row[0] for row in result]
+        if tables:
+            await conn.execute(text(f"TRUNCATE {', '.join(tables)} CASCADE;"))
+    await engine_obj.dispose()
 
 
 @pytest.fixture

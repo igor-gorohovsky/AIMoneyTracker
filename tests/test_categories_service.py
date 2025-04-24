@@ -1,4 +1,5 @@
 from typing import Callable
+from unittest.mock import MagicMock
 
 import pytest
 from assertpy import assert_that
@@ -8,7 +9,7 @@ from db.manager import DBManager
 from db.models import Category, UserAccount
 from exceptions import CategoryDuplicateError
 from misc import CategoryType
-from services.categories.service import CategoriesService
+from service import Service
 
 
 @pytest.fixture
@@ -36,7 +37,7 @@ async def test_create_category(db_manager: DBManager, user: UserAccount):
         name=name,
         type=category_type,
     )
-    sut = CategoriesService(db_manager)
+    sut = Service(db_manager, MagicMock())
 
     # Act
     category = await sut.create_category(user.user_tg_id, name, category_type)
@@ -57,7 +58,7 @@ async def test_create_category__already_exist(
         name="Food",
         category_type=CategoryType.EXPENSE,
     )
-    sut = CategoriesService(db_manager)
+    sut = Service(db_manager, MagicMock())
 
     # Act/Assert
     with pytest.raises(CategoryDuplicateError):
@@ -80,12 +81,14 @@ async def test_edit_category__change_name(
         name="Food",
         category_type=CategoryType.EXPENSE,
     )
-    sut = CategoriesService(db_manager)
+    sut = Service(db_manager, MagicMock())
     expected_name = "Transport"
 
     # Act
     category = await sut.edit_category(
-        user.user_tg_id, original_category.name, expected_name
+        user.user_tg_id,
+        original_category.name,
+        expected_name,
     )
 
     # Assert

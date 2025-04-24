@@ -1,4 +1,5 @@
 from typing import Callable
+from unittest.mock import MagicMock
 
 import pytest
 from assertpy import assert_that
@@ -21,7 +22,7 @@ def db_manager(engine: AsyncEngine) -> DBManager:
 
 @pytest.fixture
 def sut(db_manager: DBManager) -> Service:
-    return Service(db_manager)
+    return Service(db_manager, MagicMock())
 
 
 @pytest.fixture

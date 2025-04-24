@@ -4,8 +4,8 @@ from typing import override
 import httpx
 
 from db.models import Currency
+from dtos import Rates
 from env import CURRENCY_API_KEY, CURRENCY_URL
-from services.rates.dtos import Rates
 
 
 class RatesRequester(ABC):

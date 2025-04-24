@@ -13,6 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from telegram import Bot as TGBot
 from telegram.ext import ContextTypes
+from typing_extensions import AsyncGenerator
 
 from db.manager import DBManager
 from db.models import Account, Category, Currency, Rate, UserAccount
@@ -88,8 +89,8 @@ def db_manager(engine: AsyncEngine) -> DBManager:
     return DBManager(engine)
 
 
-@pytest.fixture(scope="function")
-async def engine() -> AsyncEngine:
+@pytest.fixture
+async def engine() -> AsyncGenerator:
     db_url = os.getenv(
         "DATABASE_URL",
         "",
@@ -105,7 +106,7 @@ async def engine() -> AsyncEngine:
         if tables:
             await conn.execute(
                 text(
-                    f"TRUNCATE {', '.join(tables)} RESTART IDENTITY CASCADE;"
+                    f"TRUNCATE {', '.join(tables)} RESTART IDENTITY CASCADE;",
                 ),
             )
     await engine_obj.dispose()

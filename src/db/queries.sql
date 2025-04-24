@@ -63,3 +63,17 @@ UPDATE rate
 SET rate = $3
 WHERE from_currency = $1 AND to_currency = $2
 RETURNING *;
+
+-- name: UpdateCategory :one
+UPDATE category
+SET name = $2
+WHERE category_id = $1
+RETURNING *;
+
+-- name: GetCategoryById :one
+SELECT * FROM category
+WHERE category_id = $1 AND user_id = $2;
+
+-- name: GetCategoryByName :one
+SELECT * FROM category
+WHERE name = $1 AND user_id = $2;

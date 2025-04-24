@@ -84,7 +84,9 @@ async def test_edit_category__change_name(
     expected_name = "Transport"
 
     # Act
-    category = await sut.edit_category(expected_name)
+    category = await sut.edit_category(
+        user.user_tg_id, original_category.name, expected_name
+    )
 
     # Assert
     assert_that(category.category_id).is_equal_to(

@@ -43,6 +43,43 @@ class DBManager:
         assert category is not None
         return category
 
+    async def update_category(
+        self,
+        category_id: int,
+        new_name: str,
+    ) -> Category:
+        category = await self._querier.update_category(
+            category_id=category_id,
+            name=new_name,
+        )
+        assert category is not None
+        return category
+
+    async def get_category(
+        self,
+        user_id: int,
+        *,
+        category_id: int | None = None,
+        name: str | None = None,
+    ) -> Category | None:
+        if category_id is None and name is None:
+            msg = "At least one argument must be passed"
+            raise ValueError(msg)
+
+        if category_id:
+            return await self._querier.get_category_by_id(
+                category_id=category_id,
+                user_id=user_id,
+            )
+
+        if name:
+            return await self._querier.get_category_by_name(
+                name=name,
+                user_id=user_id,
+            )
+
+        return None
+
     async def create_currency(
         self,
         name: str,

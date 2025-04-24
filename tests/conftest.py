@@ -88,13 +88,13 @@ def db_manager(engine: AsyncEngine) -> DBManager:
     return DBManager(engine)
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 async def engine() -> AsyncEngine:
     db_url = os.getenv(
         "DATABASE_URL",
         "",
     )
-    engine_obj = create_async_engine(db_url)
+    engine_obj = create_async_engine(db_url, echo=True)
     yield engine_obj
     # Teardown: truncate all tables after each test
     async with engine_obj.begin() as conn:
@@ -103,7 +103,11 @@ async def engine() -> AsyncEngine:
         )
         tables = [row[0] for row in result]
         if tables:
-            await conn.execute(text(f"TRUNCATE {', '.join(tables)} CASCADE;"))
+            await conn.execute(
+                text(
+                    f"TRUNCATE {', '.join(tables)} RESTART IDENTITY CASCADE;"
+                ),
+            )
     await engine_obj.dispose()
 
 

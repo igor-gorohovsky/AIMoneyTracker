@@ -4,3 +4,7 @@ class NotSupportedCurrencyError(ValueError):
 
 class CategoryDuplicateError(ValueError):
     pass
+
+
+class NotExistingCategoryError(ValueError):
+    pass

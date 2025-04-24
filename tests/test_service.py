@@ -10,6 +10,10 @@ from misc import CategoryType
 from service import Service
 
 
+def sort(categories: list[Category]):
+    return sorted(categories, key=lambda x: x.category_id)
+
+
 @pytest.fixture
 def db_manager(engine: AsyncEngine) -> DBManager:
     return DBManager(engine)
@@ -108,4 +112,5 @@ async def test_register_user(
     assert_that(accounts[0]).has_currency_id(currency.currency_id)
 
     assert_that(categories).is_length(9)
-    assert_that(categories).is_equal_to(expected_categories)
+    # breakpoint()
+    assert_that(sort(categories)).is_equal_to(sort(expected_categories))

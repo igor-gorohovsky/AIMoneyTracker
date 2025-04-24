@@ -67,6 +67,18 @@ WHERE user_id = :p1
 """
 
 
+GET_CATEGORY_BY_ID = """-- name: get_category_by_id \\:one
+SELECT category_id, user_id, name, type FROM category
+WHERE category_id = :p1 AND user_id = :p2
+"""
+
+
+GET_CATEGORY_BY_NAME = """-- name: get_category_by_name \\:one
+SELECT category_id, user_id, name, type FROM category
+WHERE name = :p1 AND user_id = :p2
+"""
+
+
 GET_CURRENCY = """-- name: get_currency \\:one
 SELECT currency_id, name, iso_code, symbol FROM currency
 WHERE iso_code = :p1
@@ -88,6 +100,14 @@ WHERE user_tg_id = :p1
 GET_USER_CATEGORIES = """-- name: get_user_categories \\:many
 SELECT category_id, user_id, name, type FROM category
 WHERE user_id = :p1
+"""
+
+
+UPDATE_CATEGORY = """-- name: update_category \\:one
+UPDATE category
+SET name = :p2
+WHERE category_id = :p1
+RETURNING category_id, user_id, name, type
 """
 
 
@@ -176,6 +196,28 @@ class Querier:
                 currency_id=row[4],
             )
 
+    def get_category_by_id(self, *, category_id: int, user_id: int) -> Optional[models.Category]:
+        row = self._conn.execute(sqlalchemy.text(GET_CATEGORY_BY_ID), {"p1": category_id, "p2": user_id}).first()
+        if row is None:
+            return None
+        return models.Category(
+            category_id=row[0],
+            user_id=row[1],
+            name=row[2],
+            type=row[3],
+        )
+
+    def get_category_by_name(self, *, name: str, user_id: int) -> Optional[models.Category]:
+        row = self._conn.execute(sqlalchemy.text(GET_CATEGORY_BY_NAME), {"p1": name, "p2": user_id}).first()
+        if row is None:
+            return None
+        return models.Category(
+            category_id=row[0],
+            user_id=row[1],
+            name=row[2],
+            type=row[3],
+        )
+
     def get_currency(self, *, iso_code: str) -> Optional[models.Currency]:
         row = self._conn.execute(sqlalchemy.text(GET_CURRENCY), {"p1": iso_code}).first()
         if row is None:
@@ -219,6 +261,17 @@ class Querier:
                 name=row[2],
                 type=row[3],
             )
+
+    def update_category(self, *, category_id: int, name: str) -> Optional[models.Category]:
+        row = self._conn.execute(sqlalchemy.text(UPDATE_CATEGORY), {"p1": category_id, "p2": name}).first()
+        if row is None:
+            return None
+        return models.Category(
+            category_id=row[0],
+            user_id=row[1],
+            name=row[2],
+            type=row[3],
+        )
 
     def update_rate(self, *, from_currency: int, to_currency: int, rate: decimal.Decimal) -> Optional[models.Rate]:
         row = self._conn.execute(sqlalchemy.text(UPDATE_RATE), {"p1": from_currency, "p2": to_currency, "p3": rate}).first()
@@ -310,6 +363,28 @@ class AsyncQuerier:
                 currency_id=row[4],
             )
 
+    async def get_category_by_id(self, *, category_id: int, user_id: int) -> Optional[models.Category]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_CATEGORY_BY_ID), {"p1": category_id, "p2": user_id})).first()
+        if row is None:
+            return None
+        return models.Category(
+            category_id=row[0],
+            user_id=row[1],
+            name=row[2],
+            type=row[3],
+        )
+
+    async def get_category_by_name(self, *, name: str, user_id: int) -> Optional[models.Category]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_CATEGORY_BY_NAME), {"p1": name, "p2": user_id})).first()
+        if row is None:
+            return None
+        return models.Category(
+            category_id=row[0],
+            user_id=row[1],
+            name=row[2],
+            type=row[3],
+        )
+
     async def get_currency(self, *, iso_code: str) -> Optional[models.Currency]:
         row = (await self._conn.execute(sqlalchemy.text(GET_CURRENCY), {"p1": iso_code})).first()
         if row is None:
@@ -353,6 +428,17 @@ class AsyncQuerier:
                 name=row[2],
                 type=row[3],
             )
+
+    async def update_category(self, *, category_id: int, name: str) -> Optional[models.Category]:
+        row = (await self._conn.execute(sqlalchemy.text(UPDATE_CATEGORY), {"p1": category_id, "p2": name})).first()
+        if row is None:
+            return None
+        return models.Category(
+            category_id=row[0],
+            user_id=row[1],
+            name=row[2],
+            type=row[3],
+        )
 
     async def update_rate(self, *, from_currency: int, to_currency: int, rate: decimal.Decimal) -> Optional[models.Rate]:
         row = (await self._conn.execute(sqlalchemy.text(UPDATE_RATE), {"p1": from_currency, "p2": to_currency, "p3": rate})).first()

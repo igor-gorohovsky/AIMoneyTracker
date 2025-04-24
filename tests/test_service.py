@@ -113,5 +113,4 @@ async def test_register_user(
     assert_that(accounts[0]).has_currency_id(currency.currency_id)
 
     assert_that(categories).is_length(9)
-    # breakpoint()
     assert_that(sort(categories)).is_equal_to(sort(expected_categories))

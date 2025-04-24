@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from db.manager import DBManager
 from env import DATABASE_URL
-from services.rates.requesters import ExchangeRatesRequester
-from services.rates.service import CurrenciesRatesService
+from requesters import ExchangeRatesRequester
+from service import Service
 from worker.broker import broker
 
 
@@ -18,7 +18,7 @@ async def update_currency_rates() -> None:
     db_manager = DBManager(engine)
     requester = ExchangeRatesRequester()
 
-    interactor = CurrenciesRatesService(db_manager, requester)
+    interactor = Service(db_manager, requester)
 
     _ = await interactor.update_currency_rates()
 

@@ -8,3 +8,7 @@ class CategoryDuplicateError(ValueError):
 
 class NotExistingCategoryError(ValueError):
     pass
+
+
+class AccountNotFoundError(ValueError):
+    """Raised when an account is not found."""

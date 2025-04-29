@@ -77,3 +77,33 @@ WHERE category_id = $1 AND user_id = $2;
 -- name: GetCategoryByName :one
 SELECT * FROM category
 WHERE name = $1 AND user_id = $2;
+
+-- name: CreateTransaction :one
+INSERT INTO transaction(
+    user_id, account_id, category_id, withdrawal_amount, expense_amount, note, state, date
+) VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8
+)
+RETURNING *;
+
+-- name: GetTransactions :many
+SELECT *
+FROM transaction
+WHERE user_id = $1
+ORDER BY date DESC;
+
+-- name: GetAccountByName :one
+SELECT *
+FROM account
+WHERE user_id = $1 AND name = $2;
+
+-- name: UpdateAccountBalance :one
+UPDATE account
+SET balance = $2
+WHERE account_id = $1
+RETURNING *;
+
+-- name: GetAccountById :one
+SELECT *
+FROM account
+WHERE account_id = $1;

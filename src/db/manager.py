@@ -1,10 +1,18 @@
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from db.models import Account, Category, Currency, Rate, UserAccount
-from db.queries import AsyncQuerier
+from db.models import (
+    Account,
+    Category,
+    Currency,
+    Rate,
+    Transaction,
+    UserAccount,
+)
+from db.queries import AsyncQuerier, CreateTransactionParams
 from misc import DEFAULT_CATEGORIES, CategoryType
 
 
@@ -201,3 +209,54 @@ class DBManager:
 
         assert rate is not None
         return rate
+
+    async def get_account_by_name(
+        self,
+        user_id: int,
+        name: str,
+    ) -> Account | None:
+        return await self._querier.get_account_by_name(
+            user_id=user_id,
+            name=name,
+        )
+
+    async def update_account_balance(
+        self,
+        account_id: int,
+        new_balance: Decimal,
+    ) -> Account:
+        account = await self._querier.update_account_balance(
+            account_id=account_id,
+            balance=new_balance,
+        )
+        assert account is not None
+        return account
+
+    async def create_transaction(
+        self,
+        user_id: int,
+        account_id: int,
+        category_id: int,
+        withdrawal_amount: Decimal,
+        expense_amount: Decimal,
+        note: str | None = None,
+        state: str = "completed",
+        date: datetime | None = None,
+    ) -> Transaction:
+        if date is None:
+            date = datetime.now(tz=UTC)
+
+        transaction = await self._querier.create_transaction(
+            CreateTransactionParams(
+                user_id=user_id,
+                account_id=account_id,
+                category_id=category_id,
+                withdrawal_amount=withdrawal_amount,
+                expense_amount=expense_amount,
+                note=note,
+                state=state,
+                date=date,
+            ),
+        )
+        assert transaction is not None
+        return transaction

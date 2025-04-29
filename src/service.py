@@ -1,14 +1,24 @@
+from datetime import datetime
 from decimal import Decimal
+from enum import StrEnum, auto
 
 from loguru import logger
 
 from currencies import CURRENCIES
 from db.manager import DBManager
-from db.models import Category, Currency
+from db.models import Category, Currency, Transaction
 from dtos import Rates
-from exceptions import CategoryDuplicateError, NotExistingCategoryError
+from exceptions import (
+    AccountNotFoundError,
+    CategoryDuplicateError,
+    NotExistingCategoryError,
+)
 from misc import CategoryType
 from requesters import RatesRequester
+
+
+class TransactionState(StrEnum):
+    VISIBLE = auto()
 
 
 class Service:
@@ -115,3 +125,54 @@ class Service:
                     target_currency.currency_id,
                     Decimal(str(rate)),
                 )
+
+    async def create_transaction(
+        self,
+        user_tg_id: int,
+        account_name: str,
+        category_name: str,
+        withdrawal_amount: Decimal,
+        expense_amount: Decimal,
+        note: str | None = None,
+        state: str = TransactionState.VISIBLE,
+        date: datetime | None = None,
+    ) -> Transaction:
+        async with self._db_manager.transaction():
+            user = await self._db_manager.get_user(user_tg_id)
+
+            account = await self._db_manager.get_account_by_name(
+                user.user_id,
+                account_name,
+            )
+            if account is None:
+                msg = f"Account '{account_name}' not found"
+                raise AccountNotFoundError(msg)
+
+            category = await self._db_manager.get_category(
+                user_id=user.user_id,
+                name=category_name,
+            )
+            if category is None:
+                msg = f"Category '{category_name}' not found"
+                raise NotExistingCategoryError(msg)
+
+            transaction = await self._db_manager.create_transaction(
+                user.user_id,
+                account.account_id,
+                category.category_id,
+                withdrawal_amount,
+                expense_amount,
+                note,
+                state,
+                date,
+            )
+
+            # withdrawal_amount can be with + or - sign
+            new_balance = account.balance + withdrawal_amount
+
+            _ = await self._db_manager.update_account_balance(
+                account.account_id,
+                new_balance,
+            )
+
+            return transaction

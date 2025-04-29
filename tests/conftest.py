@@ -205,6 +205,17 @@ def get_currency(engine: AsyncEngine) -> Callable:
 
 
 @pytest.fixture
+def get_account_by_id(engine: AsyncEngine) -> Callable:
+    async def wrapper(account_id: int) -> Account:
+        async with engine.connect() as conn:
+            querier = AsyncQuerier(conn)
+            account = await querier.get_account_by_id(account_id=account_id)
+            assert account is not None
+            return account
+    return wrapper
+
+
+@pytest.fixture
 def create_category(engine: AsyncEngine) -> Callable:
     async def wrapper(user_id: int, name: str, category_type: str) -> Category:
         async with engine.begin() as conn:

@@ -80,9 +80,9 @@ WHERE name = $1 AND user_id = $2;
 
 -- name: CreateTransaction :one
 INSERT INTO transaction(
-    user_id, account_id, category_id, withdrawal_amount, expense_amount, note, state, date
+    user_id, account_id, category_id, withdrawal_amount, expense_amount, note, state, date, original_transaction_id
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8
+    $1, $2, $3, $4, $5, $6, $7, $8, $9
 )
 RETURNING *;
 
@@ -91,6 +91,11 @@ SELECT *
 FROM transaction
 WHERE user_id = $1
 ORDER BY date DESC;
+
+-- name: GetTransactionById :one
+SELECT *
+FROM transaction
+WHERE transaction_id = $1 AND user_id = $2;
 
 -- name: GetAccountByName :one
 SELECT *
@@ -107,3 +112,15 @@ RETURNING *;
 SELECT *
 FROM account
 WHERE account_id = $1;
+
+-- name: UpdateTransaction :one
+UPDATE transaction
+SET account_id = $2,
+    category_id = $3,
+    withdrawal_amount = $4,
+    expense_amount = $5,
+    note = $6,
+    date = $7,
+    original_transaction_id = $9
+WHERE transaction_id = $1 AND user_id = $8
+RETURNING *;

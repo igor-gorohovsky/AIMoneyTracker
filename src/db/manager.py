@@ -12,7 +12,11 @@ from db.models import (
     Transaction,
     UserAccount,
 )
-from db.queries import AsyncQuerier, CreateTransactionParams
+from db.queries import (
+    AsyncQuerier,
+    CreateTransactionParams,
+    UpdateTransactionParams,
+)
 from misc import DEFAULT_CATEGORIES, CategoryType
 
 
@@ -219,6 +223,14 @@ class DBManager:
             user_id=user_id,
             name=name,
         )
+        
+    async def get_account_by_id(
+        self,
+        account_id: int,
+    ) -> Account | None:
+        return await self._querier.get_account_by_id(
+            account_id=account_id,
+        )
 
     async def update_account_balance(
         self,
@@ -242,6 +254,7 @@ class DBManager:
         note: str | None = None,
         state: str = "completed",
         date: datetime | None = None,
+        original_transaction_id: int | None = None,
     ) -> Transaction:
         if date is None:
             date = datetime.now(tz=UTC)
@@ -256,7 +269,52 @@ class DBManager:
                 note=note,
                 state=state,
                 date=date,
+                original_transaction_id=original_transaction_id,
             ),
         )
         assert transaction is not None
         return transaction
+
+    async def get_transaction_by_id(
+        self,
+        transaction_id: int,
+        user_id: int,
+    ) -> Transaction | None:
+        return await self._querier.get_transaction_by_id(
+            transaction_id=transaction_id,
+            user_id=user_id,
+        )
+
+    async def update_transaction(
+        self,
+        transaction_id: int,
+        user_id: int,
+        account_id: int,
+        category_id: int,
+        withdrawal_amount: Decimal,
+        expense_amount: Decimal,
+        note: str | None = None,
+        date: datetime | None = None,
+        original_transaction_id: int | None = None,
+    ) -> Transaction:
+        if date is None:
+            date = datetime.now(tz=UTC)
+
+        transaction = await self._querier.update_transaction(
+            arg=UpdateTransactionParams(
+                transaction_id=transaction_id,
+                account_id=account_id,
+                category_id=category_id,
+                withdrawal_amount=withdrawal_amount,
+                expense_amount=expense_amount,
+                note=note,
+                date=date,
+                user_id=user_id,
+                original_transaction_id=original_transaction_id,
+            ),
+        )
+        assert transaction is not None
+        return transaction
+        
+    async def get_user_transactions(self, user_id: int) -> list[Transaction]:
+        return [transaction async for transaction in self._querier.get_transactions(user_id=user_id)]

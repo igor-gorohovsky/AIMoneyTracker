@@ -55,23 +55,24 @@ RETURNING rate_id, from_currency, to_currency, rate, updated_at
 
 CREATE_TRANSACTION = """-- name: create_transaction \\:one
 INSERT INTO transaction(
-    user_id, account_id, category_id, withdrawal_amount, expense_amount, note, state, date
+    user_id, account_id, category_id, withdrawal_amount, expense_amount, note, state, date, original_transaction_id
 ) VALUES (
-    :p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8
+    :p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8, :p9
 )
-RETURNING transaction_id, account_id, category_id, user_id, withdrawal_amount, expense_amount, note, state, date
+RETURNING transaction_id, account_id, category_id, user_id, withdrawal_amount, expense_amount, note, state, date, original_transaction_id
 """
 
 
 class CreateTransactionParams(pydantic.BaseModel):
-    user_id: Optional[int]
+    user_id: int
     account_id: int
     category_id: int
-    withdrawal_amount: Optional[decimal.Decimal]
-    expense_amount: Optional[decimal.Decimal]
+    withdrawal_amount: decimal.Decimal
+    expense_amount: decimal.Decimal
     note: Optional[str]
-    state: Optional[str]
-    date: Optional[datetime.datetime]
+    state: str
+    date: datetime.datetime
+    original_transaction_id: Optional[int]
 
 
 CREATE_USER = """-- name: create_user \\:one
@@ -128,8 +129,15 @@ WHERE from_currency = :p1 AND to_currency = :p2
 """
 
 
+GET_TRANSACTION_BY_ID = """-- name: get_transaction_by_id \\:one
+SELECT transaction_id, account_id, category_id, user_id, withdrawal_amount, expense_amount, note, state, date, original_transaction_id
+FROM transaction
+WHERE transaction_id = :p1 AND user_id = :p2
+"""
+
+
 GET_TRANSACTIONS = """-- name: get_transactions \\:many
-SELECT transaction_id, account_id, category_id, user_id, withdrawal_amount, expense_amount, note, state, date
+SELECT transaction_id, account_id, category_id, user_id, withdrawal_amount, expense_amount, note, state, date, original_transaction_id
 FROM transaction
 WHERE user_id = :p1
 ORDER BY date DESC
@@ -170,6 +178,32 @@ SET rate = :p3
 WHERE from_currency = :p1 AND to_currency = :p2
 RETURNING rate_id, from_currency, to_currency, rate, updated_at
 """
+
+
+UPDATE_TRANSACTION = """-- name: update_transaction \\:one
+UPDATE transaction
+SET account_id = :p2,
+    category_id = :p3,
+    withdrawal_amount = :p4,
+    expense_amount = :p5,
+    note = :p6,
+    date = :p7,
+    original_transaction_id = :p9
+WHERE transaction_id = :p1 AND user_id = :p8
+RETURNING transaction_id, account_id, category_id, user_id, withdrawal_amount, expense_amount, note, state, date, original_transaction_id
+"""
+
+
+class UpdateTransactionParams(pydantic.BaseModel):
+    transaction_id: int
+    account_id: int
+    category_id: int
+    withdrawal_amount: decimal.Decimal
+    expense_amount: decimal.Decimal
+    note: Optional[str]
+    date: datetime.datetime
+    user_id: int
+    original_transaction_id: Optional[int]
 
 
 class Querier:
@@ -237,6 +271,7 @@ class Querier:
             "p6": arg.note,
             "p7": arg.state,
             "p8": arg.date,
+            "p9": arg.original_transaction_id,
         }).first()
         if row is None:
             return None
@@ -250,6 +285,7 @@ class Querier:
             note=row[6],
             state=row[7],
             date=row[8],
+            original_transaction_id=row[9],
         )
 
     def create_user(self, *, user_tg_id: int, currency_id: int) -> Optional[models.UserAccount]:
@@ -343,7 +379,24 @@ class Querier:
             updated_at=row[4],
         )
 
-    def get_transactions(self, *, user_id: Optional[int]) -> Iterator[models.Transaction]:
+    def get_transaction_by_id(self, *, transaction_id: int, user_id: int) -> Optional[models.Transaction]:
+        row = self._conn.execute(sqlalchemy.text(GET_TRANSACTION_BY_ID), {"p1": transaction_id, "p2": user_id}).first()
+        if row is None:
+            return None
+        return models.Transaction(
+            transaction_id=row[0],
+            account_id=row[1],
+            category_id=row[2],
+            user_id=row[3],
+            withdrawal_amount=row[4],
+            expense_amount=row[5],
+            note=row[6],
+            state=row[7],
+            date=row[8],
+            original_transaction_id=row[9],
+        )
+
+    def get_transactions(self, *, user_id: int) -> Iterator[models.Transaction]:
         result = self._conn.execute(sqlalchemy.text(GET_TRANSACTIONS), {"p1": user_id})
         for row in result:
             yield models.Transaction(
@@ -356,6 +409,7 @@ class Querier:
                 note=row[6],
                 state=row[7],
                 date=row[8],
+                original_transaction_id=row[9],
             )
 
     def get_user(self, *, user_tg_id: int) -> Optional[models.UserAccount]:
@@ -412,6 +466,33 @@ class Querier:
             to_currency=row[2],
             rate=row[3],
             updated_at=row[4],
+        )
+
+    def update_transaction(self, arg: UpdateTransactionParams) -> Optional[models.Transaction]:
+        row = self._conn.execute(sqlalchemy.text(UPDATE_TRANSACTION), {
+            "p1": arg.transaction_id,
+            "p2": arg.account_id,
+            "p3": arg.category_id,
+            "p4": arg.withdrawal_amount,
+            "p5": arg.expense_amount,
+            "p6": arg.note,
+            "p7": arg.date,
+            "p8": arg.user_id,
+            "p9": arg.original_transaction_id,
+        }).first()
+        if row is None:
+            return None
+        return models.Transaction(
+            transaction_id=row[0],
+            account_id=row[1],
+            category_id=row[2],
+            user_id=row[3],
+            withdrawal_amount=row[4],
+            expense_amount=row[5],
+            note=row[6],
+            state=row[7],
+            date=row[8],
+            original_transaction_id=row[9],
         )
 
 
@@ -480,6 +561,7 @@ class AsyncQuerier:
             "p6": arg.note,
             "p7": arg.state,
             "p8": arg.date,
+            "p9": arg.original_transaction_id,
         })).first()
         if row is None:
             return None
@@ -493,6 +575,7 @@ class AsyncQuerier:
             note=row[6],
             state=row[7],
             date=row[8],
+            original_transaction_id=row[9],
         )
 
     async def create_user(self, *, user_tg_id: int, currency_id: int) -> Optional[models.UserAccount]:
@@ -586,7 +669,24 @@ class AsyncQuerier:
             updated_at=row[4],
         )
 
-    async def get_transactions(self, *, user_id: Optional[int]) -> AsyncIterator[models.Transaction]:
+    async def get_transaction_by_id(self, *, transaction_id: int, user_id: int) -> Optional[models.Transaction]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_TRANSACTION_BY_ID), {"p1": transaction_id, "p2": user_id})).first()
+        if row is None:
+            return None
+        return models.Transaction(
+            transaction_id=row[0],
+            account_id=row[1],
+            category_id=row[2],
+            user_id=row[3],
+            withdrawal_amount=row[4],
+            expense_amount=row[5],
+            note=row[6],
+            state=row[7],
+            date=row[8],
+            original_transaction_id=row[9],
+        )
+
+    async def get_transactions(self, *, user_id: int) -> AsyncIterator[models.Transaction]:
         result = await self._conn.stream(sqlalchemy.text(GET_TRANSACTIONS), {"p1": user_id})
         async for row in result:
             yield models.Transaction(
@@ -599,6 +699,7 @@ class AsyncQuerier:
                 note=row[6],
                 state=row[7],
                 date=row[8],
+                original_transaction_id=row[9],
             )
 
     async def get_user(self, *, user_tg_id: int) -> Optional[models.UserAccount]:
@@ -655,4 +756,31 @@ class AsyncQuerier:
             to_currency=row[2],
             rate=row[3],
             updated_at=row[4],
+        )
+
+    async def update_transaction(self, arg: UpdateTransactionParams) -> Optional[models.Transaction]:
+        row = (await self._conn.execute(sqlalchemy.text(UPDATE_TRANSACTION), {
+            "p1": arg.transaction_id,
+            "p2": arg.account_id,
+            "p3": arg.category_id,
+            "p4": arg.withdrawal_amount,
+            "p5": arg.expense_amount,
+            "p6": arg.note,
+            "p7": arg.date,
+            "p8": arg.user_id,
+            "p9": arg.original_transaction_id,
+        })).first()
+        if row is None:
+            return None
+        return models.Transaction(
+            transaction_id=row[0],
+            account_id=row[1],
+            category_id=row[2],
+            user_id=row[3],
+            withdrawal_amount=row[4],
+            expense_amount=row[5],
+            note=row[6],
+            state=row[7],
+            date=row[8],
+            original_transaction_id=row[9],
         )

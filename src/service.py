@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import StrEnum, auto
 
@@ -12,6 +12,7 @@ from exceptions import (
     AccountNotFoundError,
     CategoryDuplicateError,
     NotExistingCategoryError,
+    TransactionNotFoundError,
 )
 from misc import CategoryType
 from requesters import RatesRequester
@@ -167,7 +168,7 @@ class Service:
                 date,
             )
 
-            # withdrawal_amount can be with + or - sign
+            # expense will be with - sign, top up with + sign
             new_balance = account.balance + withdrawal_amount
 
             _ = await self._db_manager.update_account_balance(
@@ -176,3 +177,97 @@ class Service:
             )
 
             return transaction
+
+    async def edit_transaction(
+        self,
+        user_tg_id: int,
+        transaction_id: int,
+        account_name: str,
+        category_name: str,
+        withdrawal_amount: Decimal,
+        expense_amount: Decimal,
+        note: str | None = None,
+        date: datetime | None = None,
+    ) -> Transaction:
+        async with self._db_manager.transaction():
+            user = await self._db_manager.get_user(user_tg_id)
+
+            original_transaction = (
+                await self._db_manager.get_transaction_by_id(
+                    transaction_id=transaction_id,
+                    user_id=user.user_id,
+                )
+            )
+
+            if not original_transaction:
+                msg = f"Transaction with ID {transaction_id} not found"
+                raise TransactionNotFoundError(msg)
+
+            account = await self._db_manager.get_account_by_name(
+                user.user_id,
+                account_name,
+            )
+            if account is None:
+                msg = f"Account '{account_name}' not found"
+                raise AccountNotFoundError(msg)
+
+            category = await self._db_manager.get_category(
+                user_id=user.user_id,
+                name=category_name,
+            )
+            if category is None:
+                msg = f"Category '{category_name}' not found"
+                raise NotExistingCategoryError(msg)
+
+            reversal_transaction = await self._db_manager.create_transaction(
+                user_id=user.user_id,
+                account_id=original_transaction.account_id,
+                category_id=original_transaction.category_id,
+                withdrawal_amount=-original_transaction.withdrawal_amount,
+                expense_amount=-original_transaction.expense_amount,
+                note=None,
+                state=TransactionState.VISIBLE,
+                date=date or datetime.now(UTC),
+                original_transaction_id=original_transaction.transaction_id,
+            )
+
+            original_account = await self._db_manager.get_account_by_id(
+                account_id=original_transaction.account_id,
+            )
+
+            if original_account:
+                new_original_balance = (
+                    original_account.balance
+                    + reversal_transaction.withdrawal_amount
+                )
+                original_account = (
+                    await self._db_manager.update_account_balance(
+                        original_account.account_id,
+                        new_original_balance,
+                    )
+                )
+
+            # Get account again if it doesn't change we need to get updated
+            # balance
+            account = await self._db_manager.get_account_by_name(
+                user.user_id, account_name
+            )
+            new_transaction = await self._db_manager.create_transaction(
+                user_id=user.user_id,
+                account_id=account.account_id,
+                category_id=category.category_id,
+                withdrawal_amount=withdrawal_amount,
+                expense_amount=expense_amount,
+                note=note or original_transaction.note,
+                state=TransactionState.VISIBLE,
+                date=date or datetime.now(UTC),
+                original_transaction_id=original_transaction.transaction_id,
+            )
+
+            new_account_balance = account.balance + withdrawal_amount
+            account = await self._db_manager.update_account_balance(
+                account.account_id,
+                new_account_balance,
+            )
+
+            return new_transaction

@@ -12,3 +12,7 @@ class NotExistingCategoryError(ValueError):
 
 class AccountNotFoundError(ValueError):
     """Raised when an account is not found."""
+
+
+class TransactionNotFoundError(ValueError):
+    """Raised when a transaction is not found or doesn't belong to the user."""

@@ -95,7 +95,7 @@ async def engine() -> AsyncGenerator:
         "DATABASE_URL",
         "",
     )
-    engine_obj = create_async_engine(db_url, echo=True)
+    engine_obj = create_async_engine(db_url)
     yield engine_obj
     # Teardown: truncate all tables after each test
     async with engine_obj.begin() as conn:

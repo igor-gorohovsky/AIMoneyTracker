@@ -41,12 +41,13 @@ class Transaction(pydantic.BaseModel):
     transaction_id: int
     account_id: int
     category_id: int
-    user_id: Optional[int]
-    withdrawal_amount: Optional[decimal.Decimal]
-    expense_amount: Optional[decimal.Decimal]
+    user_id: int
+    withdrawal_amount: decimal.Decimal
+    expense_amount: decimal.Decimal
     note: Optional[str]
-    state: Optional[str]
-    date: Optional[datetime.datetime]
+    state: str
+    date: datetime.datetime
+    original_transaction_id: Optional[int]
 
 
 class UserAccount(pydantic.BaseModel):

@@ -12,15 +12,15 @@ WHERE iso_code = $1;
 
 -- name: CreateUser :one
 INSERT INTO user_account(
-    user_tg_id, currency_id
+    currency_id
 ) VALUES (
-    $1, $2
+    $1
 )
 RETURNING *;
 
 -- name: GetUser :one
 SELECT * FROM user_account
-WHERE user_tg_id = $1;
+WHERE user_id = $1;
 
 -- name: GetAccounts :many
 SELECT * FROM account

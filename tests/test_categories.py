@@ -22,7 +22,7 @@ async def user(
         "USD",
         CURRENCIES["USD"]["symbol"],
     )
-    return await create_user(user_tg_id=1, currency_id=currency.currency_id)
+    return await create_user(currency_id=currency.currency_id)
 
 
 @pytest.mark.asyncio
@@ -40,7 +40,7 @@ async def test_create_category(db_manager: DBManager, user: UserAccount):
     sut = Service(db_manager, MagicMock())
 
     # Act
-    category = await sut.create_category(user.user_tg_id, name, category_type)
+    category = await sut.create_category(user.user_id, name, category_type)
 
     # Assert
     assert_that(category).is_equal_to(expected_category)
@@ -63,7 +63,7 @@ async def test_create_category__already_exist(
     # Act/Assert
     with pytest.raises(CategoryDuplicateError):
         await sut.create_category(
-            user.user_tg_id,
+            user.user_id,
             category.name,
             category.type,
         )
@@ -86,7 +86,7 @@ async def test_edit_category__change_name(
 
     # Act
     category = await sut.edit_category(
-        user.user_tg_id,
+        user.user_id,
         original_category.name,
         expected_name,
     )

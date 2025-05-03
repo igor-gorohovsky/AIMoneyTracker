@@ -149,10 +149,10 @@ def create_currency(engine: AsyncEngine) -> Callable:
 
 @pytest.fixture
 def get_user(engine: AsyncEngine) -> Callable:
-    async def wrapper(user_tg_id: int) -> UserAccount | None:
+    async def wrapper(user_id: int) -> UserAccount | None:
         async with engine.connect() as conn:
             querier = AsyncQuerier(conn)
-            return await querier.get_user(user_tg_id=user_tg_id)
+            return await querier.get_user(user_id=user_id)
 
     return wrapper
 
@@ -233,11 +233,10 @@ def create_category(engine: AsyncEngine) -> Callable:
 
 @pytest.fixture
 def create_user(engine: AsyncEngine) -> Callable:
-    async def wrapper(user_tg_id: int, currency_id: int) -> UserAccount:
+    async def wrapper(currency_id: int) -> UserAccount:
         async with engine.begin() as conn:
             querier = AsyncQuerier(conn)
             user = await querier.create_user(
-                user_tg_id=user_tg_id,
                 currency_id=currency_id,
             )
             assert user is not None

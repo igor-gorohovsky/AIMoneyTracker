@@ -77,11 +77,11 @@ class CreateTransactionParams(pydantic.BaseModel):
 
 CREATE_USER = """-- name: create_user \\:one
 INSERT INTO user_account(
-    user_tg_id, currency_id
+    currency_id
 ) VALUES (
-    :p1, :p2
+    :p1
 )
-RETURNING user_id, user_tg_id, balance, currency_id
+RETURNING user_id, balance, currency_id
 """
 
 
@@ -145,8 +145,8 @@ ORDER BY date DESC
 
 
 GET_USER = """-- name: get_user \\:one
-SELECT user_id, user_tg_id, balance, currency_id FROM user_account
-WHERE user_tg_id = :p1
+SELECT user_id, balance, currency_id FROM user_account
+WHERE user_id = :p1
 """
 
 
@@ -288,15 +288,14 @@ class Querier:
             original_transaction_id=row[9],
         )
 
-    def create_user(self, *, user_tg_id: int, currency_id: int) -> Optional[models.UserAccount]:
-        row = self._conn.execute(sqlalchemy.text(CREATE_USER), {"p1": user_tg_id, "p2": currency_id}).first()
+    def create_user(self, *, currency_id: int) -> Optional[models.UserAccount]:
+        row = self._conn.execute(sqlalchemy.text(CREATE_USER), {"p1": currency_id}).first()
         if row is None:
             return None
         return models.UserAccount(
             user_id=row[0],
-            user_tg_id=row[1],
-            balance=row[2],
-            currency_id=row[3],
+            balance=row[1],
+            currency_id=row[2],
         )
 
     def get_account_by_id(self, *, account_id: int) -> Optional[models.Account]:
@@ -412,15 +411,14 @@ class Querier:
                 original_transaction_id=row[9],
             )
 
-    def get_user(self, *, user_tg_id: int) -> Optional[models.UserAccount]:
-        row = self._conn.execute(sqlalchemy.text(GET_USER), {"p1": user_tg_id}).first()
+    def get_user(self, *, user_id: int) -> Optional[models.UserAccount]:
+        row = self._conn.execute(sqlalchemy.text(GET_USER), {"p1": user_id}).first()
         if row is None:
             return None
         return models.UserAccount(
             user_id=row[0],
-            user_tg_id=row[1],
-            balance=row[2],
-            currency_id=row[3],
+            balance=row[1],
+            currency_id=row[2],
         )
 
     def get_user_categories(self, *, user_id: int) -> Iterator[models.Category]:
@@ -578,15 +576,14 @@ class AsyncQuerier:
             original_transaction_id=row[9],
         )
 
-    async def create_user(self, *, user_tg_id: int, currency_id: int) -> Optional[models.UserAccount]:
-        row = (await self._conn.execute(sqlalchemy.text(CREATE_USER), {"p1": user_tg_id, "p2": currency_id})).first()
+    async def create_user(self, *, currency_id: int) -> Optional[models.UserAccount]:
+        row = (await self._conn.execute(sqlalchemy.text(CREATE_USER), {"p1": currency_id})).first()
         if row is None:
             return None
         return models.UserAccount(
             user_id=row[0],
-            user_tg_id=row[1],
-            balance=row[2],
-            currency_id=row[3],
+            balance=row[1],
+            currency_id=row[2],
         )
 
     async def get_account_by_id(self, *, account_id: int) -> Optional[models.Account]:
@@ -702,15 +699,14 @@ class AsyncQuerier:
                 original_transaction_id=row[9],
             )
 
-    async def get_user(self, *, user_tg_id: int) -> Optional[models.UserAccount]:
-        row = (await self._conn.execute(sqlalchemy.text(GET_USER), {"p1": user_tg_id})).first()
+    async def get_user(self, *, user_id: int) -> Optional[models.UserAccount]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_USER), {"p1": user_id})).first()
         if row is None:
             return None
         return models.UserAccount(
             user_id=row[0],
-            user_tg_id=row[1],
-            balance=row[2],
-            currency_id=row[3],
+            balance=row[1],
+            currency_id=row[2],
         )
 
     async def get_user_categories(self, *, user_id: int) -> AsyncIterator[models.Category]:

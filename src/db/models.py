@@ -52,6 +52,5 @@ class Transaction(pydantic.BaseModel):
 
 class UserAccount(pydantic.BaseModel):
     user_id: int
-    user_tg_id: int
     balance: decimal.Decimal
     currency_id: int

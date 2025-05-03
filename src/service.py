@@ -33,11 +33,10 @@ class Service:
         self._db_manager = db_manager
         self._rates_requester = requester
 
-    async def register_user(self, user_tg_id: int) -> None:
+    async def register_user(self) -> int:
         async with self._db_manager.transaction():
             currency = await self._db_manager.get_currency("USD")
             user = await self._db_manager.create_user(
-                user_tg_id=user_tg_id,
                 currency_id=currency.currency_id,
             )
             _ = await self._db_manager.create_default_categories(user.user_id)
@@ -45,41 +44,38 @@ class Service:
                 user.user_id,
                 user.currency_id,
             )
+            return user.user_id
 
     async def create_category(
         self,
-        user_tg_id: int,
+        user_id: int,
         name: str,
         category_type: CategoryType,
     ) -> Category:
         async with self._db_manager.transaction():
-            user = await self._db_manager.get_user(user_tg_id)
-
             category = await self._db_manager.get_category(
                 name=name,
-                user_id=user.user_id,
+                user_id=user_id,
             )
             if category is not None:
                 raise CategoryDuplicateError
 
             return await self._db_manager.create_category(
-                user.user_id,
+                user_id,
                 name,
                 category_type,
             )
 
     async def edit_category(
         self,
-        user_tg_id: int,
+        user_id: int,
         old_name: str,
         new_name: str,
     ) -> Category:
         async with self._db_manager.transaction():
-            user = await self._db_manager.get_user(user_tg_id)
-
             category = await self._db_manager.get_category(
                 name=old_name,
-                user_id=user.user_id,
+                user_id=user_id,
             )
             if category is None:
                 raise NotExistingCategoryError
@@ -129,7 +125,7 @@ class Service:
 
     async def create_transaction(
         self,
-        user_tg_id: int,
+        user_id: int,
         account_name: str,
         category_name: str,
         withdrawal_amount: Decimal,
@@ -139,10 +135,8 @@ class Service:
         date: datetime | None = None,
     ) -> Transaction:
         async with self._db_manager.transaction():
-            user = await self._db_manager.get_user(user_tg_id)
-
             account = await self._db_manager.get_account_by_name(
-                user.user_id,
+                user_id,
                 account_name,
             )
             if account is None:
@@ -150,7 +144,7 @@ class Service:
                 raise AccountNotFoundError(msg)
 
             category = await self._db_manager.get_category(
-                user_id=user.user_id,
+                user_id=user_id,
                 name=category_name,
             )
             if category is None:
@@ -158,7 +152,7 @@ class Service:
                 raise NotExistingCategoryError(msg)
 
             transaction = await self._db_manager.create_transaction(
-                user.user_id,
+                user_id,
                 account.account_id,
                 category.category_id,
                 withdrawal_amount,
@@ -180,7 +174,7 @@ class Service:
 
     async def edit_transaction(
         self,
-        user_tg_id: int,
+        user_id: int,
         transaction_id: int,
         account_name: str,
         category_name: str,
@@ -190,12 +184,10 @@ class Service:
         date: datetime | None = None,
     ) -> Transaction:
         async with self._db_manager.transaction():
-            user = await self._db_manager.get_user(user_tg_id)
-
             original_transaction = (
                 await self._db_manager.get_transaction_by_id(
                     transaction_id=transaction_id,
-                    user_id=user.user_id,
+                    user_id=user_id,
                 )
             )
 
@@ -204,7 +196,7 @@ class Service:
                 raise TransactionNotFoundError(msg)
 
             account = await self._db_manager.get_account_by_name(
-                user.user_id,
+                user_id,
                 account_name,
             )
             if account is None:
@@ -212,7 +204,7 @@ class Service:
                 raise AccountNotFoundError(msg)
 
             category = await self._db_manager.get_category(
-                user_id=user.user_id,
+                user_id=user_id,
                 name=category_name,
             )
             if category is None:
@@ -220,7 +212,7 @@ class Service:
                 raise NotExistingCategoryError(msg)
 
             reversal_transaction = await self._db_manager.create_transaction(
-                user_id=user.user_id,
+                user_id=user_id,
                 account_id=original_transaction.account_id,
                 category_id=original_transaction.category_id,
                 withdrawal_amount=-original_transaction.withdrawal_amount,
@@ -250,10 +242,10 @@ class Service:
             # Get account again if it doesn't change we need to get updated
             # balance
             account = await self._db_manager.get_account_by_name(
-                user.user_id, account_name
+                user_id, account_name
             )
             new_transaction = await self._db_manager.create_transaction(
-                user_id=user.user_id,
+                user_id=user_id,
                 account_id=account.account_id,
                 category_id=category.category_id,
                 withdrawal_amount=withdrawal_amount,

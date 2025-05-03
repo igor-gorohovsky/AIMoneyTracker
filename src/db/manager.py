@@ -108,11 +108,9 @@ class DBManager:
 
     async def create_user(
         self,
-        user_tg_id: int,
         currency_id: int,
     ) -> UserAccount:
         user = await self._querier.create_user(
-            user_tg_id=user_tg_id,
             currency_id=currency_id,
         )
         assert user is not None
@@ -137,8 +135,8 @@ class DBManager:
     async def get_currency(self, iso_code: str) -> Currency | None:
         return await self._querier.get_currency(iso_code=iso_code)
 
-    async def get_user(self, user_tg_id: int) -> UserAccount:
-        user = await self._querier.get_user(user_tg_id=user_tg_id)
+    async def get_user(self, user_id: int) -> UserAccount:
+        user = await self._querier.get_user(user_id=user_id)
         assert user is not None
         return user
 

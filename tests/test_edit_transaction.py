@@ -29,7 +29,7 @@ async def user(
     create_currency: Callable,
 ) -> UserAccount:
     currency = await create_currency("US Dollar", "USD", "$")
-    return await create_user(123456789, currency.currency_id)
+    return await create_user(currency.currency_id)
 
 
 @pytest.fixture
@@ -78,7 +78,7 @@ async def transaction(
     user: UserAccount,
 ) -> Transaction:
     return await sut.create_transaction(
-        user_tg_id=user.user_tg_id,
+        user_id=user.user_id,
         account_name=account.name,
         category_name=expense_category.name,
         withdrawal_amount=Decimal("-100.00"),
@@ -98,7 +98,7 @@ async def transactions_setup(
 ) -> tuple[Transaction, Category]:
     """Set up a transaction and a category for testing."""
     transaction = await sut.create_transaction(
-        user_tg_id=user.user_tg_id,
+        user_id=user.user_id,
         account_name=account.name,
         category_name=expense_category.name,
         withdrawal_amount=Decimal("-100.00"),
@@ -152,7 +152,7 @@ async def test_edit_transaction(
 
     # Act
     updated_transaction = await sut.edit_transaction(
-        user_tg_id=user.user_tg_id,
+        user_id=user.user_id,
         transaction_id=transaction.transaction_id,
         account_name=account.name,
         category_name=new_category.name,
@@ -231,7 +231,7 @@ async def test_edit_transaction_between_accounts(
 
     # Act
     updated_transaction = await sut.edit_transaction(
-        user_tg_id=user.user_tg_id,
+        user_id=user.user_id,
         transaction_id=transaction.transaction_id,
         account_name=second_account.name,  # Different account
         category_name=new_category.name,
@@ -268,7 +268,7 @@ async def test_edit_transaction_not_found(
     # Act & Assert
     with pytest.raises(TransactionNotFoundError) as exc_info:
         await sut.edit_transaction(
-            user_tg_id=user.user_tg_id,
+            user_id=user.user_id,
             transaction_id=non_existent_id,
             account_name=account.name,
             category_name=expense_category.name,
@@ -293,7 +293,7 @@ async def test_edit_transaction_custom_date(
 
     # Act
     updated_transaction = await sut.edit_transaction(
-        user_tg_id=user.user_tg_id,
+        user_id=user.user_id,
         transaction_id=transaction.transaction_id,
         account_name=account.name,
         category_name=new_category.name,
@@ -335,7 +335,7 @@ async def test_edit_transaction_account_not_found(
     # Act & Assert
     with pytest.raises(AccountNotFoundError) as exc_info:
         await sut.edit_transaction(
-            user_tg_id=user.user_tg_id,
+            user_id=user.user_id,
             transaction_id=transaction.transaction_id,
             account_name=non_existent_account,
             category_name="Test Expense",
@@ -360,7 +360,7 @@ async def test_edit_transaction_category_not_found(
     # Act & Assert
     with pytest.raises(NotExistingCategoryError) as exc_info:
         await sut.edit_transaction(
-            user_tg_id=user.user_tg_id,
+            user_id=user.user_id,
             transaction_id=transaction.transaction_id,
             account_name=account.name,
             category_name=non_existent_category,
@@ -391,7 +391,7 @@ async def test_edit_transaction_only_amount(
 
     # Act
     edited_transaction = await sut.edit_transaction(
-        user_tg_id=user.user_tg_id,
+        user_id=user.user_id,
         transaction_id=transaction.transaction_id,
         account_name=account.name,
         category_name=expense_category.name,
@@ -434,7 +434,7 @@ async def test_edit_transaction_only_note(
 
     # Act
     edited_transaction = await sut.edit_transaction(
-        user_tg_id=user.user_tg_id,
+        user_id=user.user_id,
         transaction_id=transaction.transaction_id,
         account_name=account.name,
         category_name=expense_category.name,
@@ -471,7 +471,7 @@ async def test_edit_transaction_only_category(
     """Test editing only the category field."""
     # Act
     edited_transaction = await sut.edit_transaction(
-        user_tg_id=user.user_tg_id,
+        user_id=user.user_id,
         transaction_id=transaction.transaction_id,
         account_name=account.name,
         category_name=income_category.name,  # Changed from expense to income
@@ -527,7 +527,7 @@ async def test_edit_transaction_different_currency(
 
     # Act
     edited_transaction = await sut.edit_transaction(
-        user_tg_id=user.user_tg_id,
+        user_id=user.user_id,
         transaction_id=transaction.transaction_id,
         account_name=eur_account.name,
         category_name=expense_category.name,
@@ -576,7 +576,7 @@ async def test_edit_transaction_all_fields_changed(
 
     # Act
     edited_transaction = await sut.edit_transaction(
-        user_tg_id=user.user_tg_id,
+        user_id=user.user_id,
         transaction_id=transaction.transaction_id,
         account_name=second_account.name,  # Different account
         category_name=income_category.name,  # Different category

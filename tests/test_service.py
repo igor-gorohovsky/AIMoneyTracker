@@ -96,11 +96,11 @@ async def test_register_user(
 ) -> None:
     currency = await create_currency("United States dollar", "USD", "$")
 
-    user_id = await sut.register_user()
+    user = await sut.register_user()
 
-    expected_user = await get_user(user_id)
-    accounts = await get_accounts(user_id)
-    categories = await get_user_categories(user_id)
+    expected_user = await get_user(user.user_id)
+    accounts = await get_accounts(user.user_id)
+    categories = await get_user_categories(user.user_id)
 
     assert_that(expected_user).is_not_none()
     assert_that(expected_user).has_balance(0)

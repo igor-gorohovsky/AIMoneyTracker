@@ -16,7 +16,14 @@ from telegram.ext import ContextTypes
 from typing_extensions import AsyncGenerator
 
 from db.manager import DBManager
-from db.models import Account, Category, Currency, Rate, UserAccount
+from db.models import (
+    Account,
+    Category,
+    Currency,
+    Rate,
+    Transaction,
+    UserAccount,
+)
 from db.queries import AsyncQuerier
 
 BASE_DIR = Path(__file__).parent.parent
@@ -212,6 +219,7 @@ def get_account_by_id(engine: AsyncEngine) -> Callable:
             account = await querier.get_account_by_id(account_id=account_id)
             assert account is not None
             return account
+
     return wrapper
 
 
@@ -241,5 +249,16 @@ def create_user(engine: AsyncEngine) -> Callable:
             )
             assert user is not None
         return user
+
+    return wrapper
+
+
+@pytest.fixture
+def get_transactions(db_manager: DBManager) -> Callable:
+    """Get all transactions for a user."""
+
+    async def wrapper(user_id: int) -> list[Transaction]:
+        async with db_manager.transaction():
+            return await db_manager.get_user_transactions(user_id)
 
     return wrapper

@@ -1,8 +1,8 @@
-import pytest
 from decimal import Decimal
 from typing import Callable
 from unittest.mock import create_autospec
 
+import pytest
 from assertpy import assert_that
 
 from db.manager import DBManager
@@ -32,8 +32,8 @@ async def user(create_user: Callable, currency: Currency) -> UserAccount:
 def get_account_by_name(db_manager: DBManager) -> Callable:
     async def wrapper(user_id: int, name: str) -> Account | None:
         async with db_manager.transaction():
-            return await db_manager.get_account_by_name(user_id, name)
-    
+            return await db_manager.get_account(user_id, name=name)
+
     return wrapper
 
 
@@ -99,7 +99,7 @@ async def test_create_account_duplicate_name(
 ):
     # Arrange
     account_name = "Duplicate Account"
-    
+
     # Create the first account
     await sut.create_account(
         user_id=user.user_id,
@@ -114,7 +114,7 @@ async def test_create_account_duplicate_name(
             name=account_name,
             currency_id=currency.currency_id,
         )
-    
+
     assert_that(str(exc_info.value)).contains(account_name)
     assert_that(str(exc_info.value)).contains(str(user.user_id))
 
@@ -128,7 +128,7 @@ async def test_create_multiple_accounts(
 ):
     # Arrange
     account_names = ["Checking", "Savings", "Investment"]
-    
+
     # Act
     accounts = []
     for name in account_names:
@@ -139,7 +139,7 @@ async def test_create_multiple_accounts(
             initial_balance=Decimal("100.00"),
         )
         accounts.append(account)
-    
+
     # Assert
     for name, account in zip(account_names, accounts):
         stored_account = await get_account_by_name(user.user_id, name)
@@ -158,7 +158,7 @@ async def test_create_account_different_currencies(
     usd_currency = await create_currency("US Dollar", "USD", "$")
     eur_currency = await create_currency("Euro", "EUR", "€")
     gbp_currency = await create_currency("British Pound", "GBP", "£")
-    
+
     # Act
     usd_account = await sut.create_account(
         user_id=user.user_id,
@@ -166,22 +166,23 @@ async def test_create_account_different_currencies(
         currency_id=usd_currency.currency_id,
         initial_balance=Decimal("100.00"),
     )
-    
+
     eur_account = await sut.create_account(
         user_id=user.user_id,
         name="EUR Account",
         currency_id=eur_currency.currency_id,
         initial_balance=Decimal("200.00"),
     )
-    
+
     gbp_account = await sut.create_account(
         user_id=user.user_id,
         name="GBP Account",
         currency_id=gbp_currency.currency_id,
         initial_balance=Decimal("300.00"),
     )
-    
+
     # Assert
     assert_that(usd_account.currency_id).is_equal_to(usd_currency.currency_id)
     assert_that(eur_account.currency_id).is_equal_to(eur_currency.currency_id)
     assert_that(gbp_account.currency_id).is_equal_to(gbp_currency.currency_id)
+

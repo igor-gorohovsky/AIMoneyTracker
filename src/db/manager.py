@@ -212,23 +212,25 @@ class DBManager:
         assert rate is not None
         return rate
 
-    async def get_account_by_name(
+    async def get_account(
         self,
         user_id: int,
-        name: str,
+        *,
+        name: str | None = None,
+        account_id: int | None = None,
     ) -> Account | None:
-        return await self._querier.get_account_by_name(
-            user_id=user_id,
-            name=name,
-        )
+        if name:
+            return await self._querier.get_account_by_name(
+                user_id=user_id,
+                name=name,
+            )
+        if account_id:
+            return await self._querier.get_account_by_id(
+                account_id=account_id,
+            )
 
-    async def get_account_by_id(
-        self,
-        account_id: int,
-    ) -> Account | None:
-        return await self._querier.get_account_by_id(
-            account_id=account_id,
-        )
+        msg = "One argument should be passed"
+        raise ValueError(msg)
 
     async def update_account_balance(
         self,
@@ -252,7 +254,6 @@ class DBManager:
         note: str | None = None,
         state: str = "completed",
         date: datetime | None = None,
-        original_transaction_id: int | None = None,
     ) -> Transaction:
         if date is None:
             date = datetime.now(tz=UTC)
@@ -267,7 +268,6 @@ class DBManager:
                 note=note,
                 state=state,
                 date=date,
-                original_transaction_id=original_transaction_id,
             ),
         )
         assert transaction is not None
@@ -293,7 +293,6 @@ class DBManager:
         expense_amount: Decimal,
         note: str | None = None,
         date: datetime | None = None,
-        original_transaction_id: int | None = None,
     ) -> Transaction:
         if date is None:
             date = datetime.now(tz=UTC)
@@ -308,7 +307,6 @@ class DBManager:
                 note=note,
                 date=date,
                 user_id=user_id,
-                original_transaction_id=original_transaction_id,
             ),
         )
         assert transaction is not None
@@ -318,6 +316,14 @@ class DBManager:
         return [
             transaction
             async for transaction in self._querier.get_transactions(
-                user_id=user_id
+                user_id=user_id,
+            )
+        ]
+
+    async def get_user_categories(self, user_id: int) -> list[Category]:
+        return [
+            category
+            async for category in self._querier.get_user_categories(
+                user_id=user_id,
             )
         ]

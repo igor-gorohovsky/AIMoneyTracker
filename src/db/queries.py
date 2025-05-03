@@ -55,9 +55,9 @@ RETURNING rate_id, from_currency, to_currency, rate, updated_at
 
 CREATE_TRANSACTION = """-- name: create_transaction \\:one
 INSERT INTO transaction(
-    user_id, account_id, category_id, withdrawal_amount, expense_amount, note, state, date, original_transaction_id
+    user_id, account_id, category_id, withdrawal_amount, expense_amount, note, state, date
 ) VALUES (
-    :p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8, :p9
+    :p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8
 )
 RETURNING transaction_id, account_id, category_id, user_id, withdrawal_amount, expense_amount, note, state, date, original_transaction_id
 """
@@ -72,7 +72,6 @@ class CreateTransactionParams(pydantic.BaseModel):
     note: Optional[str]
     state: str
     date: datetime.datetime
-    original_transaction_id: Optional[int]
 
 
 CREATE_USER = """-- name: create_user \\:one
@@ -187,8 +186,7 @@ SET account_id = :p2,
     withdrawal_amount = :p4,
     expense_amount = :p5,
     note = :p6,
-    date = :p7,
-    original_transaction_id = :p9
+    date = :p7
 WHERE transaction_id = :p1 AND user_id = :p8
 RETURNING transaction_id, account_id, category_id, user_id, withdrawal_amount, expense_amount, note, state, date, original_transaction_id
 """
@@ -203,7 +201,6 @@ class UpdateTransactionParams(pydantic.BaseModel):
     note: Optional[str]
     date: datetime.datetime
     user_id: int
-    original_transaction_id: Optional[int]
 
 
 class Querier:
@@ -271,7 +268,6 @@ class Querier:
             "p6": arg.note,
             "p7": arg.state,
             "p8": arg.date,
-            "p9": arg.original_transaction_id,
         }).first()
         if row is None:
             return None
@@ -476,7 +472,6 @@ class Querier:
             "p6": arg.note,
             "p7": arg.date,
             "p8": arg.user_id,
-            "p9": arg.original_transaction_id,
         }).first()
         if row is None:
             return None
@@ -559,7 +554,6 @@ class AsyncQuerier:
             "p6": arg.note,
             "p7": arg.state,
             "p8": arg.date,
-            "p9": arg.original_transaction_id,
         })).first()
         if row is None:
             return None
@@ -764,7 +758,6 @@ class AsyncQuerier:
             "p6": arg.note,
             "p7": arg.date,
             "p8": arg.user_id,
-            "p9": arg.original_transaction_id,
         })).first()
         if row is None:
             return None

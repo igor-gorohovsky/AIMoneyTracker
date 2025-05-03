@@ -80,9 +80,9 @@ WHERE name = $1 AND user_id = $2;
 
 -- name: CreateTransaction :one
 INSERT INTO transaction(
-    user_id, account_id, category_id, withdrawal_amount, expense_amount, note, state, date, original_transaction_id
+    user_id, account_id, category_id, withdrawal_amount, expense_amount, note, state, date
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9
+    $1, $2, $3, $4, $5, $6, $7, $8
 )
 RETURNING *;
 
@@ -120,7 +120,6 @@ SET account_id = $2,
     withdrawal_amount = $4,
     expense_amount = $5,
     note = $6,
-    date = $7,
-    original_transaction_id = $9
+    date = $7
 WHERE transaction_id = $1 AND user_id = $8
 RETURNING *;

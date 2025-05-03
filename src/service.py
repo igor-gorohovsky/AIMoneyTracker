@@ -69,19 +69,19 @@ class Service:
     async def edit_category(
         self,
         user_id: int,
-        old_name: str,
+        category_id: int,
         new_name: str,
     ) -> Category:
         async with self._db_manager.transaction():
             category = await self._db_manager.get_category(
-                name=old_name,
+                category_id=category_id,
                 user_id=user_id,
             )
             if category is None:
                 raise NotExistingCategoryError
 
             return await self._db_manager.update_category(
-                category.category_id,
+                category_id,
                 new_name,
             )
 
@@ -126,8 +126,8 @@ class Service:
     async def create_transaction(
         self,
         user_id: int,
-        account_name: str,
-        category_name: str,
+        account_id: int,
+        category_id: int,
         withdrawal_amount: Decimal,
         expense_amount: Decimal,
         note: str | None = None,
@@ -135,26 +135,23 @@ class Service:
         date: datetime | None = None,
     ) -> Transaction:
         async with self._db_manager.transaction():
-            account = await self._db_manager.get_account_by_name(
-                user_id,
-                account_name,
-            )
+            account = await self._db_manager.get_account_by_id(account_id)
             if account is None:
-                msg = f"Account '{account_name}' not found"
+                msg = f"Account with ID {account_id} not found"
                 raise AccountNotFoundError(msg)
 
             category = await self._db_manager.get_category(
                 user_id=user_id,
-                name=category_name,
+                category_id=category_id,
             )
             if category is None:
-                msg = f"Category '{category_name}' not found"
+                msg = f"Category with ID {category_id} not found"
                 raise NotExistingCategoryError(msg)
 
             transaction = await self._db_manager.create_transaction(
                 user_id,
-                account.account_id,
-                category.category_id,
+                account_id,
+                category_id,
                 withdrawal_amount,
                 expense_amount,
                 note,
@@ -166,7 +163,7 @@ class Service:
             new_balance = account.balance + withdrawal_amount
 
             _ = await self._db_manager.update_account_balance(
-                account.account_id,
+                account_id,
                 new_balance,
             )
 
@@ -176,8 +173,8 @@ class Service:
         self,
         user_id: int,
         transaction_id: int,
-        account_name: str,
-        category_name: str,
+        account_id: int,
+        category_id: int,
         withdrawal_amount: Decimal,
         expense_amount: Decimal,
         note: str | None = None,
@@ -195,20 +192,17 @@ class Service:
                 msg = f"Transaction with ID {transaction_id} not found"
                 raise TransactionNotFoundError(msg)
 
-            account = await self._db_manager.get_account_by_name(
-                user_id,
-                account_name,
-            )
+            account = await self._db_manager.get_account_by_id(account_id)
             if account is None:
-                msg = f"Account '{account_name}' not found"
+                msg = f"Account with ID {account_id} not found"
                 raise AccountNotFoundError(msg)
 
             category = await self._db_manager.get_category(
                 user_id=user_id,
-                name=category_name,
+                category_id=category_id,
             )
             if category is None:
-                msg = f"Category '{category_name}' not found"
+                msg = f"Category with ID {category_id} not found"
                 raise NotExistingCategoryError(msg)
 
             reversal_transaction = await self._db_manager.create_transaction(
@@ -239,15 +233,12 @@ class Service:
                     )
                 )
 
-            # Get account again if it doesn't change we need to get updated
-            # balance
-            account = await self._db_manager.get_account_by_name(
-                user_id, account_name
-            )
+            # Get account again to get the updated balance
+            account = await self._db_manager.get_account_by_id(account_id)
             new_transaction = await self._db_manager.create_transaction(
                 user_id=user_id,
-                account_id=account.account_id,
-                category_id=category.category_id,
+                account_id=account_id,
+                category_id=category_id,
                 withdrawal_amount=withdrawal_amount,
                 expense_amount=expense_amount,
                 note=note or original_transaction.note,
@@ -258,7 +249,7 @@ class Service:
 
             new_account_balance = account.balance + withdrawal_amount
             account = await self._db_manager.update_account_balance(
-                account.account_id,
+                account_id,
                 new_account_balance,
             )
 

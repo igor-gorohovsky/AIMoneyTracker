@@ -112,8 +112,8 @@ async def test_create_expense_transaction(
     # Act
     transaction = await sut.create_transaction(
         user_id=user.user_id,
-        account_name=account.name,
-        category_name=expense_category.name,
+        account_id=account.account_id,
+        category_id=expense_category.category_id,
         withdrawal_amount=withdrawal_amount,
         expense_amount=expense_amount,
         note=note,
@@ -145,8 +145,8 @@ async def test_create_income_transaction(
     # Act
     transaction = await sut.create_transaction(
         user_id=user.user_id,
-        account_name=account.name,
-        category_name=income_category.name,
+        account_id=account.account_id,
+        category_id=income_category.category_id,
         withdrawal_amount=withdrawal_amount,
         expense_amount=expense_amount,
         note=note,
@@ -179,8 +179,8 @@ async def test_create_transaction_with_custom_date(
     # Act
     transaction = await sut.create_transaction(
         user_id=user.user_id,
-        account_name=account.name,
-        category_name=expense_category.name,
+        account_id=account.account_id,
+        category_id=expense_category.category_id,
         withdrawal_amount=withdrawal_amount,
         expense_amount=expense_amount,
         date=custom_date,
@@ -198,7 +198,7 @@ async def test_create_transaction_account_not_found(
     expense_category: Category,
 ):
     # Arrange
-    non_existent_account = "Non-existent Account"
+    non_existent_account_id = 9999
     withdrawal_amount = Decimal("-50.00")
     expense_amount = Decimal("-50.00")
 
@@ -206,13 +206,13 @@ async def test_create_transaction_account_not_found(
     with pytest.raises(AccountNotFoundError) as exc_info:
         await sut.create_transaction(
             user_id=user.user_id,
-            account_name=non_existent_account,
-            category_name=expense_category.name,
+            account_id=non_existent_account_id,
+            category_id=expense_category.category_id,
             withdrawal_amount=withdrawal_amount,
             expense_amount=expense_amount,
         )
 
-    assert f"Account '{non_existent_account}' not found" in str(exc_info.value)
+    assert f"Account with ID {non_existent_account_id} not found" in str(exc_info.value)
 
 
 @pytest.mark.asyncio
@@ -222,7 +222,7 @@ async def test_create_transaction_category_not_found(
     account: Account,
 ):
     # Arrange
-    non_existent_category = "Non-existent Category"
+    non_existent_category_id = 9999
     withdrawal_amount = Decimal("-50.00")
     expense_amount = Decimal("-50.00")
 
@@ -230,13 +230,13 @@ async def test_create_transaction_category_not_found(
     with pytest.raises(NotExistingCategoryError) as exc_info:
         await sut.create_transaction(
             user_id=user.user_id,
-            account_name=account.name,
-            category_name=non_existent_category,
+            account_id=account.account_id,
+            category_id=non_existent_category_id,
             withdrawal_amount=withdrawal_amount,
             expense_amount=expense_amount,
         )
 
-    assert f"Category '{non_existent_category}' not found" in str(
+    assert f"Category with ID {non_existent_category_id} not found" in str(
         exc_info.value
     )
 
@@ -256,8 +256,8 @@ async def test_create_multiple_transactions(
     # First transaction - expense
     await sut.create_transaction(
         user_id=user.user_id,
-        account_name=account.name,
-        category_name=expense_category.name,
+        account_id=account.account_id,
+        category_id=expense_category.category_id,
         withdrawal_amount=Decimal("-200.00"),
         expense_amount=Decimal("-200.00"),
         note="First expense",
@@ -266,8 +266,8 @@ async def test_create_multiple_transactions(
     # Second transaction - income
     await sut.create_transaction(
         user_id=user.user_id,
-        account_name=account.name,
-        category_name=income_category.name,
+        account_id=account.account_id,
+        category_id=income_category.category_id,
         withdrawal_amount=Decimal("150.00"),
         expense_amount=Decimal("150.00"),
         note="Income transaction",
@@ -276,8 +276,8 @@ async def test_create_multiple_transactions(
     # Third transaction - expense
     await sut.create_transaction(
         user_id=user.user_id,
-        account_name=account.name,
-        category_name=expense_category.name,
+        account_id=account.account_id,
+        category_id=expense_category.category_id,
         withdrawal_amount=Decimal("-75.00"),
         expense_amount=Decimal("-75.00"),
         note="Second expense",
@@ -309,8 +309,8 @@ async def test_transaction_with_different_amounts(
     # Act
     transaction = await sut.create_transaction(
         user_id=user.user_id,
-        account_name=account.name,
-        category_name=expense_category.name,
+        account_id=account.account_id,
+        category_id=expense_category.category_id,
         withdrawal_amount=withdrawal_amount,
         expense_amount=expense_amount,
         note="Transaction with currency conversion",

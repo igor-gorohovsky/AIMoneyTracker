@@ -79,8 +79,8 @@ async def transaction(
 ) -> Transaction:
     return await sut.create_transaction(
         user_id=user.user_id,
-        account_name=account.name,
-        category_name=expense_category.name,
+        account_id=account.account_id,
+        category_id=expense_category.category_id,
         withdrawal_amount=Decimal("-100.00"),
         expense_amount=Decimal("-100.00"),
         note="Original transaction",
@@ -99,8 +99,8 @@ async def transactions_setup(
     """Set up a transaction and a category for testing."""
     transaction = await sut.create_transaction(
         user_id=user.user_id,
-        account_name=account.name,
-        category_name=expense_category.name,
+        account_id=account.account_id,
+        category_id=expense_category.category_id,
         withdrawal_amount=Decimal("-100.00"),
         expense_amount=Decimal("-100.00"),
         note="Original transaction",
@@ -154,8 +154,8 @@ async def test_edit_transaction(
     updated_transaction = await sut.edit_transaction(
         user_id=user.user_id,
         transaction_id=transaction.transaction_id,
-        account_name=account.name,
-        category_name=new_category.name,
+        account_id=account.account_id,
+        category_id=new_category.category_id,
         withdrawal_amount=new_withdrawal_amount,
         expense_amount=new_expense_amount,
         note=new_note,
@@ -233,8 +233,8 @@ async def test_edit_transaction_between_accounts(
     updated_transaction = await sut.edit_transaction(
         user_id=user.user_id,
         transaction_id=transaction.transaction_id,
-        account_name=second_account.name,  # Different account
-        category_name=new_category.name,
+        account_id=second_account.account_id,  # Different account
+        category_id=new_category.category_id,
         withdrawal_amount=new_withdrawal_amount,
         expense_amount=new_expense_amount,
     )
@@ -270,8 +270,8 @@ async def test_edit_transaction_not_found(
         await sut.edit_transaction(
             user_id=user.user_id,
             transaction_id=non_existent_id,
-            account_name=account.name,
-            category_name=expense_category.name,
+            account_id=account.account_id,
+            category_id=expense_category.category_id,
             withdrawal_amount=Decimal("-50.00"),
             expense_amount=Decimal("-50.00"),
         )
@@ -295,8 +295,8 @@ async def test_edit_transaction_custom_date(
     updated_transaction = await sut.edit_transaction(
         user_id=user.user_id,
         transaction_id=transaction.transaction_id,
-        account_name=account.name,
-        category_name=new_category.name,
+        account_id=account.account_id,
+        category_id=new_category.category_id,
         withdrawal_amount=Decimal("-120.00"),
         expense_amount=Decimal("-120.00"),
         date=custom_date,
@@ -327,23 +327,24 @@ async def test_edit_transaction_account_not_found(
     sut: Service,
     user: UserAccount,
     transaction: Transaction,
+    expense_category: Category,
 ):
     """Test editing a transaction with a non-existent account."""
     # Arrange
-    non_existent_account = "Non-existent Account"
+    non_existent_account_id = 9999
 
     # Act & Assert
     with pytest.raises(AccountNotFoundError) as exc_info:
         await sut.edit_transaction(
             user_id=user.user_id,
             transaction_id=transaction.transaction_id,
-            account_name=non_existent_account,
-            category_name="Test Expense",
+            account_id=non_existent_account_id,  # Non-existent account ID
+            category_id=expense_category.category_id,
             withdrawal_amount=Decimal("-50.00"),
             expense_amount=Decimal("-50.00"),
         )
 
-    assert f"Account '{non_existent_account}' not found" in str(exc_info.value)
+    assert f"Account with ID {non_existent_account_id} not found" in str(exc_info.value)
 
 
 @pytest.mark.asyncio
@@ -362,13 +363,13 @@ async def test_edit_transaction_category_not_found(
         await sut.edit_transaction(
             user_id=user.user_id,
             transaction_id=transaction.transaction_id,
-            account_name=account.name,
-            category_name=non_existent_category,
+            account_id=account.account_id,
+            category_id=9999,  # Non-existent category ID
             withdrawal_amount=Decimal("-50.00"),
             expense_amount=Decimal("-50.00"),
         )
 
-    assert f"Category '{non_existent_category}' not found" in str(
+    assert "Category with ID 9999 not found" in str(
         exc_info.value
     )
 
@@ -393,8 +394,8 @@ async def test_edit_transaction_only_amount(
     edited_transaction = await sut.edit_transaction(
         user_id=user.user_id,
         transaction_id=transaction.transaction_id,
-        account_name=account.name,
-        category_name=expense_category.name,
+        account_id=account.account_id,
+        category_id=expense_category.category_id,
         withdrawal_amount=new_withdrawal_amount,
         expense_amount=new_expense_amount,
         note=transaction.note,
@@ -436,8 +437,8 @@ async def test_edit_transaction_only_note(
     edited_transaction = await sut.edit_transaction(
         user_id=user.user_id,
         transaction_id=transaction.transaction_id,
-        account_name=account.name,
-        category_name=expense_category.name,
+        account_id=account.account_id,
+        category_id=expense_category.category_id,
         withdrawal_amount=transaction.withdrawal_amount,
         expense_amount=transaction.expense_amount,
         note=new_note,
@@ -473,8 +474,8 @@ async def test_edit_transaction_only_category(
     edited_transaction = await sut.edit_transaction(
         user_id=user.user_id,
         transaction_id=transaction.transaction_id,
-        account_name=account.name,
-        category_name=income_category.name,  # Changed from expense to income
+        account_id=account.account_id,
+        category_id=income_category.category_id,  # Changed from expense to income
         withdrawal_amount=transaction.withdrawal_amount,
         expense_amount=transaction.expense_amount,
         note=transaction.note,
@@ -529,8 +530,8 @@ async def test_edit_transaction_different_currency(
     edited_transaction = await sut.edit_transaction(
         user_id=user.user_id,
         transaction_id=transaction.transaction_id,
-        account_name=eur_account.name,
-        category_name=expense_category.name,
+        account_id=eur_account.account_id,
+        category_id=expense_category.category_id,
         withdrawal_amount=withdrawal_amount,
         expense_amount=expense_amount,
         note=note,
@@ -578,8 +579,8 @@ async def test_edit_transaction_all_fields_changed(
     edited_transaction = await sut.edit_transaction(
         user_id=user.user_id,
         transaction_id=transaction.transaction_id,
-        account_name=second_account.name,  # Different account
-        category_name=income_category.name,  # Different category
+        account_id=second_account.account_id,  # Different account
+        category_id=income_category.category_id,  # Different category
         withdrawal_amount=new_withdrawal_amount,  # Different amount and sign
         expense_amount=new_expense_amount,
         note=new_note,  # Different note

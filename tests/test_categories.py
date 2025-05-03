@@ -87,7 +87,7 @@ async def test_edit_category__change_name(
     # Act
     category = await sut.edit_category(
         user.user_id,
-        original_category.name,
+        original_category.category_id,
         expected_name,
     )
 

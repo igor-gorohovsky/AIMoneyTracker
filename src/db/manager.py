@@ -221,7 +221,7 @@ class DBManager:
             user_id=user_id,
             name=name,
         )
-        
+
     async def get_account_by_id(
         self,
         account_id: int,
@@ -313,6 +313,11 @@ class DBManager:
         )
         assert transaction is not None
         return transaction
-        
+
     async def get_user_transactions(self, user_id: int) -> list[Transaction]:
-        return [transaction async for transaction in self._querier.get_transactions(user_id=user_id)]
+        return [
+            transaction
+            async for transaction in self._querier.get_transactions(
+                user_id=user_id
+            )
+        ]

@@ -6,9 +6,10 @@ from loguru import logger
 
 from currencies import CURRENCIES
 from db.manager import DBManager
-from db.models import Category, Currency, Transaction
+from db.models import Account, Category, Currency, Transaction
 from dtos import Rates
 from exceptions import (
+    AccountDuplicateError,
     AccountNotFoundError,
     CategoryDuplicateError,
     NotExistingCategoryError,
@@ -168,6 +169,32 @@ class Service:
             )
 
             return transaction
+
+    async def create_account(
+        self,
+        user_id: int,
+        name: str,
+        currency_id: int,
+        initial_balance: float = 0,
+    ) -> Account:
+        async with self._db_manager.transaction():
+            existing_account = await self._db_manager.get_account_by_name(
+                user_id=user_id,
+                name=name,
+            )
+            if existing_account is not None:
+                msg = (
+                    f"Account with name '{name}'"
+                    f"already exists for user {user_id}"
+                )
+                raise AccountDuplicateError(msg)
+
+            return await self._db_manager.create_account(
+                user_id=user_id,
+                name=name,
+                balance=Decimal(initial_balance),
+                currency_id=currency_id,
+            )
 
     async def edit_transaction(
         self,
